@@ -44,7 +44,7 @@ function Header() {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <SidebarProvider style={{ "--sidebar-width": "14rem" } as React.CSSProperties}>
+    <SidebarProvider style={{ "--sidebar-width": "19rem" } as React.CSSProperties}>
       <AppSidebar />
       <SidebarInset className="flex flex-col h-screen bg-[oklch(0.09_0_0)]">
         <Header />

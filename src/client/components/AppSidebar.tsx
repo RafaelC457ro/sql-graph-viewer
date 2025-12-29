@@ -1,14 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Database,
-  FolderOpen,
-  Heart,
-  Lock,
-  Plus,
-  Search,
-  Clock,
-  ChevronRight,
-  ChevronDown,
+  FileText,
+  Settings,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -16,199 +10,89 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FilesSidebar } from "./FilesSidebar";
+import { DatabaseSidebar } from "./DatabaseSidebar";
+import { cn } from "@/lib/utils";
 
-const sharedQueries = [
-  { id: "1", name: "All Users", icon: FolderOpen },
-];
-
-const favoriteQueries = [
-  { id: "1", name: "Recent Orders", icon: Heart },
-];
-
-const communityQueries = [
-  { id: "1", name: "Templates", icon: FolderOpen },
-  { id: "2", name: "Quickstarts", icon: FolderOpen },
-];
-
-type SectionKey = "shared" | "favorites" | "files" | "community";
+type ActiveView = "database" | "files";
 
 export function AppSidebar() {
-  const [expandedSection, setExpandedSection] = useState<SectionKey | null>("files");
-  const [files, setFiles] = useState<string[]>([]);
+  const [activeView, setActiveView] = useState<ActiveView>("files");
+  const { setOpen, open } = useSidebar();
 
-  useEffect(() => {
-    fetch("/api/queries")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setFiles(data);
-      })
-      .catch((err) => console.error("Failed to load queries", err));
-  }, []);
-
-  const toggleSection = (section: SectionKey) => {
-    setExpandedSection(expandedSection === section ? null : section);
+  const handleViewChange = (view: ActiveView) => {
+    if (activeView === view && open) {
+       // Optional: toggle close if clicking same icon? 
+       // For now, let's just keep it simple.
+    } else {
+      setActiveView(view);
+      setOpen(true);
+    }
   };
 
   return (
-    <Sidebar className="border-r border-border bg-[oklch(0.12_0_0)]">
-      <SidebarHeader className="h-12 border-b border-border px-4 py-0 flex justify-center">
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r border-border bg-[oklch(0.12_0_0)] overflow-hidden"
+    >
+      <SidebarHeader className="h-12 border-b border-border px-4 py-0 flex justify-center sr-only">
         <Link to="/" className="flex items-center gap-2 font-semibold text-sm text-foreground">
           <span>Query Editor</span>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
-        {/* SHARED Section */}
-        <SidebarGroup>
-          <button
-            onClick={() => toggleSection("shared")}
-            className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          >
-            {expandedSection === "shared" ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
+      <div className="flex h-full flex-1 overflow-hidden">
+        {/* Rail (Activity Bar) */}
+        <div className="w-[48px] border-r border-border flex flex-col items-center py-2 gap-2 bg-[oklch(0.12_0_0)] z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleViewChange("database")}
+            className={cn(
+              "h-10 w-10 text-muted-foreground hover:text-foreground",
+              activeView === "database" && "bg-accent text-accent-foreground"
             )}
-            SHARED
-          </button>
-          {expandedSection === "shared" && (
-            <SidebarGroupContent className="ml-3 mt-1">
-              <SidebarMenu>
-                {sharedQueries.map((query) => (
-                  <SidebarMenuItem key={query.id}>
-                    <SidebarMenuButton asChild>
-                      <button className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground">
-                        <query.icon className="h-3 w-3" />
-                        <span>{query.name}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* FAVORITES Section */}
-        <SidebarGroup>
-          <button
-            onClick={() => toggleSection("favorites")}
-            className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            title="Database Info"
           >
-            {expandedSection === "favorites" ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
+            <Database className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleViewChange("files")}
+            className={cn(
+              "h-10 w-10 text-muted-foreground hover:text-foreground",
+              activeView === "files" && "bg-accent text-accent-foreground"
             )}
-            FAVORITES
-          </button>
-          {expandedSection === "favorites" && (
-            <SidebarGroupContent className="ml-3 mt-1">
-              <SidebarMenu>
-                {favoriteQueries.map((query) => (
-                  <SidebarMenuItem key={query.id}>
-                    <SidebarMenuButton asChild>
-                      <button className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground">
-                        <query.icon className="h-3 w-3" />
-                        <span>{query.name}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* FILES Section (was PRIVATE) */}
-        <SidebarGroup>
-          <button
-            onClick={() => toggleSection("files")}
-            className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            title="Files"
           >
-            {expandedSection === "files" ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-            FILES ({files.length})
-          </button>
-          {expandedSection === "files" && (
-            <SidebarGroupContent className="ml-3 mt-1">
-              <SidebarMenu>
-                {files.map((filename) => (
-                  <SidebarMenuItem key={filename}>
-                    <SidebarMenuButton asChild>
-                      <Link 
-                        to={`/?query=${filename}`} 
-                        className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <Database className="h-3 w-3" />
-                        <span>{filename}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-                      <Plus className="h-3 w-3" />
-                      <span>New File</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
+            <FileText className="h-5 w-5" />
+          </Button>
 
-        {/* COMMUNITY Section */}
-        <SidebarGroup>
-          <button
-            onClick={() => toggleSection("community")}
-            className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          <div className="flex-1" />
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-muted-foreground hover:text-foreground"
+            title="App Configuration"
           >
-            {expandedSection === "community" ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-            COMMUNITY
-          </button>
-          {expandedSection === "community" && (
-            <SidebarGroupContent className="ml-3 mt-1">
-              <SidebarMenu>
-                {communityQueries.map((query) => (
-                  <SidebarMenuItem key={query.id}>
-                    <SidebarMenuButton asChild>
-                      <button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-foreground hover:bg-accent hover:text-accent-foreground">
-                        <query.icon className="h-3 w-3" />
-                        <span>{query.name}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-      </SidebarContent>
+            <Settings className="h-5 w-5" />
+          </Button>
+        </div>
 
-      <SidebarFooter className="p-3 border-t border-border">
-        <Button variant="outline" size="sm" className="w-full justify-start text-xs bg-transparent">
-          <Clock className="mr-2 h-3 w-3" />
-          View running queries
-        </Button>
-      </SidebarFooter>
+        {/* Sidebar Content Panel */}
+        <SidebarContent className="flex-1 gap-0">
+          {activeView === "files" && <FilesSidebar />}
+          {activeView === "database" && <DatabaseSidebar />}
+        </SidebarContent>
+      </div>
+
+
     </Sidebar>
   );
 }
