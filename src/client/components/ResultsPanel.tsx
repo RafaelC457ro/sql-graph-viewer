@@ -1,12 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResultsTable } from "./ResultsTable";
 import { GraphView } from "./GraphView";
+import type { Node, Edge } from "reactflow";
 
 interface ResultsPanelProps {
   columns: string[];
   rows: Record<string, unknown>[];
-  graphNodes: { id: string; label: string }[];
-  graphEdges: { source: string; target: string; label?: string }[];
+  graphNodes: Node[];
+  graphEdges: Edge[];
 }
 
 export function ResultsPanel({

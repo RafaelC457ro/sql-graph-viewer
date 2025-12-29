@@ -12,12 +12,12 @@ export function useQueryTabs() {
   ]);
   const [activeTabId, setActiveTabId] = useState("1");
 
-  const addTab = () => {
+  const addTab = (initialData?: { title?: string; content?: string }) => {
     const newId = String(Date.now());
     const newTab: QueryTab = {
       id: newId,
-      title: `Query ${tabs.length + 1}`,
-      content: "-- Write your SQL query here\n",
+      title: initialData?.title ?? `Query ${tabs.length + 1}`,
+      content: initialData?.content ?? "-- Write your SQL query here\n",
     };
     setTabs([...tabs, newTab]);
     setActiveTabId(newId);

@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Plug } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 
 interface LayoutProps {
@@ -25,19 +25,18 @@ function Header() {
           {isCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </Button>
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">AGE Viewer</span>
-          <span className="text-muted-foreground">/</span>
-          <span className="text-foreground">Query Editor</span>
-          <span className="text-muted-foreground">/</span>
+          <span className="text-muted-foreground">Server name</span>
           <span className="rounded bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
             DEVELOPMENT
           </span>
         </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="h-8 text-xs">
+        <Button variant="outline" size="sm" className="h-7 text-xs rounded-full gap-1.5 px-3 bg-transparent border-border hover:bg-accent hover:text-accent-foreground">
+          <Plug className="h-3.5 w-3.5" />
           Connect
         </Button>
+      </div>
+      <div className="flex items-center gap-2">
+        {/* Right side actions if any */}
       </div>
     </header>
   );

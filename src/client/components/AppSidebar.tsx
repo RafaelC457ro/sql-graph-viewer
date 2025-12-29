@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Database,
   FolderOpen,
@@ -34,20 +34,25 @@ const favoriteQueries = [
   { id: "1", name: "Recent Orders", icon: Heart },
 ];
 
-const privateQueries = [
-  { id: "1", name: "Colors", icon: Database },
-  { id: "2", name: "OpenAI Vector Search", icon: Database },
-];
-
 const communityQueries = [
   { id: "1", name: "Templates", icon: FolderOpen },
   { id: "2", name: "Quickstarts", icon: FolderOpen },
 ];
 
-type SectionKey = "shared" | "favorites" | "private" | "community";
+type SectionKey = "shared" | "favorites" | "files" | "community";
 
 export function AppSidebar() {
-  const [expandedSection, setExpandedSection] = useState<SectionKey | null>("private");
+  const [expandedSection, setExpandedSection] = useState<SectionKey | null>("files");
+  const [files, setFiles] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/queries")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setFiles(data);
+      })
+      .catch((err) => console.error("Failed to load queries", err));
+  }, []);
 
   const toggleSection = (section: SectionKey) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -124,29 +129,32 @@ export function AppSidebar() {
           )}
         </SidebarGroup>
 
-        {/* PRIVATE Section */}
+        {/* FILES Section (was PRIVATE) */}
         <SidebarGroup>
           <button
-            onClick={() => toggleSection("private")}
+            onClick={() => toggleSection("files")}
             className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
-            {expandedSection === "private" ? (
+            {expandedSection === "files" ? (
               <ChevronDown className="h-3 w-3" />
             ) : (
               <ChevronRight className="h-3 w-3" />
             )}
-            PRIVATE ({privateQueries.length})
+            FILES ({files.length})
           </button>
-          {expandedSection === "private" && (
+          {expandedSection === "files" && (
             <SidebarGroupContent className="ml-3 mt-1">
               <SidebarMenu>
-                {privateQueries.map((query) => (
-                  <SidebarMenuItem key={query.id}>
+                {files.map((filename) => (
+                  <SidebarMenuItem key={filename}>
                     <SidebarMenuButton asChild>
-                      <button className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground">
-                        <Lock className="h-3 w-3" />
-                        <span>{query.name}</span>
-                      </button>
+                      <Link 
+                        to={`/?query=${filename}`} 
+                        className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs text-foreground hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Database className="h-3 w-3" />
+                        <span>{filename}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -154,7 +162,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground">
                       <Plus className="h-3 w-3" />
-                      <span>Add view</span>
+                      <span>New File</span>
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

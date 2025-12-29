@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -34,6 +35,9 @@ const mockGraphData = {
 };
 
 export function QueryPage() {
+  const [searchParams] = useSearchParams();
+  const queryFile = searchParams.get("query");
+  
   const {
     tabs,
     activeTabId,
@@ -43,6 +47,27 @@ export function QueryPage() {
     removeTab,
     updateTabContent,
   } = useQueryTabs();
+
+  // Handle opening file from URL param
+  useEffect(() => {
+    if (queryFile) {
+      // Check if tab already exists to avoid refetching/duplicating if strictly based on name
+      const existingTab = tabs.find(t => t.title === queryFile);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        fetch(`/api/query?file=${queryFile}`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error('Failed to load');
+          })
+          .then(data => {
+             addTab({ title: data.filename, content: data.content });
+          })
+          .catch(err => console.error(err));
+      }
+    }
+  }, [queryFile]);
 
   const [hasRun, setHasRun] = useState(false);
 

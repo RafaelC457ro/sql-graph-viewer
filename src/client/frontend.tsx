@@ -11,6 +11,16 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "./router";
 // stylesheet is loaded from index.html via a <link> so bun serves/processes it
 
+// Suppress ResizeObserver loop errors which are often benign in development
+window.addEventListener("error", (e) => {
+  if (
+    e.message === "ResizeObserver loop completed with undelivered notifications." ||
+    e.message === "ResizeObserver loop limit exceeded"
+  ) {
+    e.stopImmediatePropagation();
+  }
+});
+
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
