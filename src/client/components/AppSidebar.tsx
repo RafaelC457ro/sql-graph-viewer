@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FilesSidebar } from "./FilesSidebar";
 import { DatabaseSidebar } from "./DatabaseSidebar";
+import { AppConfigPopover } from "./AppConfigPopover";
 import { cn } from "@/lib/utils";
 
 type ActiveView = "database" | "files";
@@ -75,14 +76,7 @@ export function AppSidebar() {
 
           <div className="flex-1" />
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-muted-foreground hover:text-foreground"
-            title="App Configuration"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
+          <AppConfigPopover />
         </div>
 
         {/* Sidebar Content Panel */}

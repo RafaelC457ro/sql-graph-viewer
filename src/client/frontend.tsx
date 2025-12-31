@@ -21,10 +21,16 @@ window.addEventListener("error", (e) => {
   }
 });
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
+
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>
 );
 

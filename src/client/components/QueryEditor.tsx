@@ -11,10 +11,13 @@ import { sql } from "@codemirror/lang-sql";
 import { EditorView } from "@codemirror/view";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 
+import { useEffect } from "react";
+
 interface QueryEditorProps {
   value: string;
   onChange: (value: string) => void;
   onRun: () => void;
+  onSave?: () => void;
 }
 
 const databases = [
@@ -40,7 +43,24 @@ const appThemeOverrides = EditorView.theme({
   }
 });
 
-export function QueryEditor({ value, onChange, onRun }: QueryEditorProps) {
+export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps) {
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        onSave?.();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        onRun();
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onRun, onSave]);
+
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="flex-1 relative overflow-hidden">
@@ -93,16 +113,28 @@ export function QueryEditor({ value, onChange, onRun }: QueryEditorProps) {
           </DropdownMenu>
         </div>
 
-        <Button 
-          onClick={onRun} 
-          size="sm" 
-          className="h-7 gap-1.5 bg-[oklch(0.55_0.22_145)] text-white hover:bg-[oklch(0.50_0.22_145)]"
-        >
-          <span>Run</span>
-          <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border border-white/20 bg-white/10 px-1 font-mono text-[9px] font-medium">
-            ⌘ ↵
-          </kbd>
-        </Button>
+        <div className="flex items-center gap-2">
+             {onSave && (
+               <Button
+                 onClick={onSave}
+                 variant="secondary"
+                 size="sm"
+                 className="h-7 text-xs"
+               >
+                 Save
+               </Button>
+             )}
+            <Button 
+              onClick={onRun} 
+              size="sm" 
+              className="h-7 gap-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20"
+            >
+              <span>Run</span>
+              <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border border-white/20 bg-white/10 px-1 font-mono text-[9px] font-medium">
+                ⌘ ↵
+              </kbd>
+            </Button>
+        </div>
       </div>
     </div>
   );

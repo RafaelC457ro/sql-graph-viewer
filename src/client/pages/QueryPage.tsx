@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -9,6 +9,7 @@ import { QueryTabs } from "@/components/QueryTabs";
 import { QueryEditor } from "@/components/QueryEditor";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { useQueryTabs } from "@/hooks/useQueryTabs";
+import { useFiles, useUpdateFile, useCreateFile } from "@/hooks/useFiles";
 
 // Mock data for demonstration
 const mockResults = {
@@ -34,10 +35,29 @@ const mockGraphData = {
   ],
 };
 
-export function QueryPage() {
-  const [searchParams] = useSearchParams();
-  const queryFile = searchParams.get("query");
+// Helper to generate unique name with (1), (2), etc.
+function getUniqueName(baseName: string, existingNames: string[]): string {
+  if (!existingNames.includes(baseName)) return baseName;
   
+  let counter = 1;
+  let newName = `${baseName} (${counter})`;
+  while (existingNames.includes(newName)) {
+    counter++;
+    newName = `${baseName} (${counter})`;
+  }
+  return newName;
+}
+
+export function QueryPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const fileIdParam = searchParams.get("fileId");
+  const fileId = fileIdParam ? parseInt(fileIdParam) : undefined;
+  
+  const { data: files } = useFiles();
+  const updateFile = useUpdateFile();
+  const createFile = useCreateFile();
+
   const {
     tabs,
     activeTabId,
@@ -46,34 +66,68 @@ export function QueryPage() {
     addTab,
     removeTab,
     updateTabContent,
+    updateTabFileId,
   } = useQueryTabs();
 
-  // Handle opening file from URL param
+  // Load file from URL param into a tab
   useEffect(() => {
-    if (queryFile) {
-      // Check if tab already exists to avoid refetching/duplicating if strictly based on name
-      const existingTab = tabs.find(t => t.title === queryFile);
-      if (existingTab) {
-        setActiveTabId(existingTab.id);
-      } else {
-        fetch(`/api/query?file=${queryFile}`)
-          .then(res => {
-            if (res.ok) return res.json();
-            throw new Error('Failed to load');
-          })
-          .then(data => {
-             addTab({ title: data.filename, content: data.content });
-          })
-          .catch(err => console.error(err));
+    if (fileId && files) {
+      const file = files.find(f => f.id === fileId);
+      if (file) {
+        // Check if tab for this file already exists using fileId
+        const existingTab = tabs.find(t => t.fileId === fileId);
+        
+        if (existingTab) {
+           if (existingTab.id !== activeTabId) {
+             setActiveTabId(existingTab.id);
+           }
+        } else {
+           addTab({ title: file.name, content: file.content, fileId: file.id });
+        }
       }
     }
-  }, [queryFile]);
+  }, [fileId, files]);
+  
+  const handleSave = async () => {
+    if (!activeTab) return;
+    
+    if (activeTab.fileId) {
+      // Update existing file
+      try {
+        await updateFile.mutateAsync({
+          id: activeTab.fileId,
+          name: activeTab.title,
+          content: activeTab.content
+        });
+      } catch (e) {
+        console.error(e);
+        alert("Failed to save");
+      }
+    } else {
+      // Create new file with unique name
+      try {
+        const existingNames = files?.map(f => f.name) || [];
+        const uniqueName = getUniqueName(activeTab.title, existingNames);
+        
+        const newFile = await createFile.mutateAsync({
+          name: uniqueName,
+          content: activeTab.content,
+        });
+        
+        // Associate tab with new file
+        updateTabFileId(activeTabId, newFile.id);
+        navigate(`/?fileId=${newFile.id}`);
+      } catch (e) {
+        console.error(e);
+        alert("Failed to create file");
+      }
+    }
+  };
 
   const [hasRun, setHasRun] = useState(false);
 
   const handleRun = () => {
     setHasRun(true);
-    // In real implementation, this would execute the query
     console.log("Running query:", activeTab?.content);
   };
 
@@ -93,6 +147,7 @@ export function QueryPage() {
             value={activeTab?.content ?? ""}
             onChange={(value) => updateTabContent(activeTabId, value)}
             onRun={handleRun}
+            onSave={handleSave}
           />
         </ResizablePanel>
 

@@ -1,5 +1,17 @@
 import { serve } from "bun";
 import index from "../client/index.html";
+import { Elysia } from "elysia";
+
+import { filesRoutes } from "./routes/files";
+import { foldersRoutes } from "./routes/folders";
+
+const api = new Elysia()
+  .get("/api/hello", () => ({
+    message: "Hello, world!",
+    method: "GET",
+  }))
+  .use(filesRoutes)
+  .use(foldersRoutes);
 
 const server = serve({
   routes: {
@@ -7,45 +19,8 @@ const server = serve({
     "/*": index,
 
     // API routes
-    "/api/hello": {
-      async GET(req) {
-        return Response.json({
-          message: "Hello, world!",
-          method: "GET",
-        });
-      },
-    },
-    "/api/queries": {
-      async GET(req) {
-        try {
-          const { readdir } = await import("node:fs/promises");
-          const files = await readdir("queries");
-          // Filter for sql/cypher files if needed, or just return all
-          return Response.json(files.filter(f => !f.startsWith(".")));
-        } catch (error) {
-           // if dir doesn't exist, return empty
-           return Response.json([]);
-        }
-      },
-    },
-    "/api/query": {
-      async GET(req) {
-        const url = new URL(req.url);
-        const filename = url.searchParams.get("file");
-        if (!filename) return new Response("Missing file param", { status: 400 });
-        
-        try {
-             const file = Bun.file(`queries/${filename}`);
-             if (await file.exists()) {
-                 const content = await file.text();
-                 return Response.json({ content, filename });
-             }
-             return new Response("File not found", { status: 404 });
-        } catch(e) {
-            return new Response("Error reading file", { status: 500 });
-        }
-      }
-    }
+    "/api/*": api.handle,
+   
   },
 
   development: process.env.NODE_ENV !== "production" && {

@@ -4,6 +4,7 @@ export interface QueryTab {
   id: string;
   title: string;
   content: string;
+  fileId?: number;
 }
 
 export function useQueryTabs() {
@@ -12,12 +13,13 @@ export function useQueryTabs() {
   ]);
   const [activeTabId, setActiveTabId] = useState("1");
 
-  const addTab = (initialData?: { title?: string; content?: string }) => {
+  const addTab = (initialData?: { title?: string; content?: string, fileId?: number }) => {
     const newId = String(Date.now());
     const newTab: QueryTab = {
       id: newId,
       title: initialData?.title ?? `Query ${tabs.length + 1}`,
       content: initialData?.content ?? "-- Write your SQL query here\n",
+      fileId: initialData?.fileId,
     };
     setTabs([...tabs, newTab]);
     setActiveTabId(newId);
@@ -43,6 +45,10 @@ export function useQueryTabs() {
     setTabs(tabs.map((tab) => (tab.id === id ? { ...tab, title } : tab)));
   };
 
+  const updateTabFileId = (id: string, fileId: number) => {
+    setTabs(tabs.map((tab) => (tab.id === id ? { ...tab, fileId } : tab)));
+  };
+
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
   return {
@@ -54,5 +60,6 @@ export function useQueryTabs() {
     removeTab,
     updateTabContent,
     updateTabTitle,
+    updateTabFileId,
   };
 }

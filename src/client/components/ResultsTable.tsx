@@ -24,7 +24,7 @@ export function ResultsTable({ columns, rows }: ResultsTableProps) {
 
   return (
     <ScrollArea className="h-full w-full">
-      <Table>
+      <Table className="border-t-0">
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
             {columns.map((column) => (

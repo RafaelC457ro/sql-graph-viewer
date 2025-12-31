@@ -19,7 +19,7 @@ export function ResultsPanel({
   return (
     <div className="h-full flex flex-col">
       <Tabs defaultValue="results" className="flex-1 flex flex-col">
-        <div className="border-b border-border px-4">
+        <div className="border-b border-border px-4 py-0">
           <TabsList className="bg-transparent h-8 p-0 gap-4">
             <TabsTrigger
               value="results"
