@@ -208,7 +208,7 @@ export function FilesSidebar() {
           <Link 
             to={`/?fileId=${file.id}`}
             className={cn(
-              "flex w-full items-center gap-2 px-3 py-1 text-sm transition-colors",
+              "flex w-full items-center gap-2 px-4 py-1 text-sm transition-colors",
               isActive 
                 ? "bg-accent text-accent-foreground font-medium" 
                 : "text-foreground/80 hover:bg-accent/50 hover:text-foreground"
@@ -296,11 +296,11 @@ export function FilesSidebar() {
     const isExpanded = expandedFolders[folder.id] ?? true;
     
     return (
-      <SidebarGroup className="px-2">
+      <SidebarGroup>
         <div className="group/folder flex items-center">
           <button
             onClick={() => toggleFolder(folder.id)}
-            className="flex flex-1 items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="flex flex-1 items-center gap-1.5 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             <FolderOpen className="h-3 w-3" />
@@ -346,7 +346,7 @@ export function FilesSidebar() {
         </div>
         
         {isExpanded && folderFiles.length > 0 && (
-          <SidebarGroupContent className="mt-1 ml-2">
+          <SidebarGroupContent className="mt-1">
             <SidebarMenu>
               {folderFiles.map((file) => (
                 <FileItem key={file.id} file={file} />
@@ -384,15 +384,15 @@ export function FilesSidebar() {
       </div>
       
       {/* Search */}
-      <div className="px-3 py-2 border-b border-border">
-        <div className="relative">
+      <div className="h-9 border-b border-border">
+        <div className="relative h-full">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search files..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 pl-8 text-sm bg-muted/50 border-0 focus-visible:ring-1"
+            className="h-9 pl-8 text-sm bg-transparent border-0 focus-visible:ring-0 rounded-none placeholder:text-muted-foreground/70"
           />
         </div>
       </div>
@@ -420,10 +420,10 @@ export function FilesSidebar() {
           <>
             {/* Favorites */}
             {favorites.length > 0 && (
-              <SidebarGroup className="px-2">
+              <SidebarGroup>
                 <button
                   onClick={() => toggleFolder("favorites")}
-                  className="flex w-full items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex w-full items-center gap-1.5 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {expandedFolders.favorites ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                   <Star className="h-3 w-3" />
@@ -450,10 +450,10 @@ export function FilesSidebar() {
 
             {/* Uncategorized */}
             {uncategorized.length > 0 && (
-              <SidebarGroup className="px-2">
+              <SidebarGroup>
                 <button
                   onClick={() => toggleFolder("uncategorized")}
-                  className="flex w-full items-center gap-1.5 px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex w-full items-center gap-1.5 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {expandedFolders.uncategorized ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                   <FileText className="h-3 w-3" />

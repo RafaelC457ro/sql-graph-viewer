@@ -67,7 +67,27 @@ export function QueryPage() {
     removeTab,
     updateTabContent,
     updateTabFileId,
+    updateTabTitle,
   } = useQueryTabs();
+
+  // Sync tab titles with file names when files are renamed
+  // Only sync if the tab content matches the saved file (not dirty)
+  useEffect(() => {
+    if (!files) return;
+    
+    tabs.forEach(tab => {
+      if (tab.fileId) {
+        const file = files.find(f => f.id === tab.fileId);
+        if (file && file.name !== tab.title) {
+          // Check if tab is "clean" (content matches saved file)
+          const isClean = file.content === tab.content;
+          if (isClean) {
+            updateTabTitle(tab.id, file.name);
+          }
+        }
+      }
+    });
+  }, [files]);
 
   // Load file from URL param into a tab
   useEffect(() => {

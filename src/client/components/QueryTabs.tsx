@@ -20,14 +20,14 @@ export function QueryTabs({
   onTabAdd,
 }: QueryTabsProps) {
   return (
-    <div className="flex items-center border-b border-border bg-[oklch(0.14_0_0)]">
+    <div className="flex h-9 items-center border-b border-border bg-[oklch(0.14_0_0)]">
       <ScrollArea className="flex-1">
         <div className="flex items-center">
           {tabs.map((tab) => (
             <div
               key={tab.id}
               className={cn(
-                "group flex items-center gap-2 px-4 py-2 border-r border-border cursor-pointer transition-colors text-xs",
+                "group flex h-9 items-center gap-2 px-4 border-r border-border cursor-pointer transition-colors text-xs",
                 activeTabId === tab.id
                   ? "bg-[oklch(0.12_0_0)] text-foreground"
                   : "text-muted-foreground hover:bg-[oklch(0.12_0_0)] hover:text-foreground"
