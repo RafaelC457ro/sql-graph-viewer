@@ -4,6 +4,7 @@ import { db } from "../db";
 import { sessions } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { ConnectionManager } from "../services/ConnectionManager";
+import { buildQueryResult } from "../utils/GraphBuilder";
 
 
 export const connectionRoutes = new Elysia({ prefix: "/api" })
@@ -133,10 +134,10 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
        
        return {
          success: true,
-         data: {
-            rows: result.rows,
-            fields: result.fields.map(f => ({ name: f.name, dataTypeID: f.dataTypeID }))
-         }
+         data: buildQueryResult({
+           columns: result.fields ? result.fields.map((f) => f.name) : [],
+           rows: result.rows || [],
+         }),
        };
 
      } catch (error) {

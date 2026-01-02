@@ -1,3 +1,4 @@
+import type { QueryResult } from "../../shared/types";
 
 export interface ConnectionParams {
   host?: string;
@@ -55,7 +56,7 @@ export const getSessionStatus = async (): Promise<SessionStatus> => {
   return res.json();
 };
 
-export const executeQuery = async (query: string) => {
+export const executeQuery = async (query: string): Promise<QueryResult> => {
     const res = await fetch("/api/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

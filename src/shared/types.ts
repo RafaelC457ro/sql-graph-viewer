@@ -29,3 +29,30 @@ export const folderInsertSchema = createInsertSchema(folders, {
 export type Folder = z.infer<typeof folderSelectSchema>;
 export type NewFolder = z.infer<typeof folderInsertSchema>;
 
+export type TableResult = {
+  kind: "table";
+  columns: string[];
+  rows: any[];
+};
+
+export type GraphResult = {
+  kind: "graph";
+  columns: string[];
+  rows: any[];
+  nodes: Array<{
+    id: string;
+    position: { x: number; y: number };
+    data: Record<string, any>;
+    type?: string;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+    data?: Record<string, any>;
+    type?: string;
+  }>;
+};
+
+export type QueryResult = TableResult | GraphResult;

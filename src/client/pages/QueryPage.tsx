@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ResizableHandle,
@@ -11,6 +11,7 @@ import { ResultsPanel } from "@/components/ResultsPanel";
 import { useQueryTabs } from "@/hooks/useQueryTabs";
 import { useFiles, useUpdateFile, useCreateFile } from "@/hooks/useFiles";
 import { useQueryExecution } from "@/hooks/useConnection";
+import type { QueryResult } from "../../shared/types";
 
 // Helper to generate unique name with (1), (2), etc.
 function getUniqueName(baseName: string, existingNames: string[]): string {
@@ -122,24 +123,22 @@ export function QueryPage() {
   };
 
   const queryExecution = useQueryExecution();
-  const [queryResult, setQueryResult] = useState<{ rows: any[], columns: string[] } | null>(null);
+  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [executionError, setExecutionError] = useState<string | null>(null);
 
-  const handleRun = async () => {
-    if (!activeTab?.content) return;
+  const handleRun = useCallback(async (query?: string) => {
+    const queryToRun = query || activeTab?.content;
+    if (!queryToRun) return;
     
     setExecutionError(null);
     try {
-      const result = await queryExecution.mutateAsync(activeTab.content);
-      // Results from /api/query are in format { rows, fields }
-      // Fields contains [{ name, dataTypeID }]
-      const columns = result.fields.map((f: any) => f.name);
-      setQueryResult({ rows: result.rows, columns });
+      const result = await queryExecution.mutateAsync(queryToRun);
+      setQueryResult(result);
     } catch (e) {
       console.error(e);
       setExecutionError(e instanceof Error ? e.message : "Query failed");
     }
-  };
+  }, [activeTab?.content, queryExecution]);
 
   return (
     <div className="h-full flex flex-col">
@@ -165,10 +164,7 @@ export function QueryPage() {
 
         <ResizablePanel defaultSize={50} minSize={20}>
           <ResultsPanel
-            columns={queryResult?.columns || []}
-            rows={queryResult?.rows || []}
-            graphNodes={[]} // Graph display will be implemented later
-            graphEdges={[]}
+            result={queryResult}
             isLoading={queryExecution.isPending}
             error={executionError}
           />

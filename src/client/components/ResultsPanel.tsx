@@ -1,27 +1,23 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResultsTable } from "./ResultsTable";
 import { GraphView } from "./GraphView";
-import type { Node, Edge } from "reactflow";
+import type { QueryResult } from "../../shared/types";
 
 interface ResultsPanelProps {
-  columns: string[];
-  rows: Record<string, unknown>[];
-  graphNodes: Node[];
-  graphEdges: Edge[];
+  result: QueryResult | null;
   isLoading?: boolean;
   error?: string | null;
 }
 
 export function ResultsPanel({
-  columns,
-  rows,
-  graphNodes,
-  graphEdges,
+  result,
   isLoading,
   error,
 }: ResultsPanelProps) {
+  const isGraph = result?.kind === "graph";
+
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col relative overflow-hidden">
       {error && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
           <div className="flex flex-col items-center gap-3 max-w-md text-center">
@@ -41,6 +37,7 @@ export function ResultsPanel({
           </div>
         </div>
       )}
+
       <Tabs defaultValue="results" className="flex-1 flex flex-col">
         <div className="border-b border-border px-4 py-0">
           <TabsList className="bg-transparent h-8 p-0 gap-4">
@@ -51,23 +48,38 @@ export function ResultsPanel({
               Results
             </TabsTrigger>
 
+            {isGraph && (
+              <TabsTrigger
+                value="graph"
+                className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-[oklch(0.55_0.22_145)] data-[state=active]:text-foreground"
+              >
+                Graph
+              </TabsTrigger>
+            )}
+
             <TabsTrigger
-              value="graph"
+              value="raw"
               className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-[oklch(0.55_0.22_145)] data-[state=active]:text-foreground"
             >
-              Graph
+              Raw
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="results" className="flex-1 m-0">
-          <ResultsTable columns={columns} rows={rows} />
+        <TabsContent value="results" className="flex-1 m-0 overflow-auto">
+          <ResultsTable columns={result?.columns || []} rows={result?.rows || []} />
         </TabsContent>
 
+        {isGraph && (
+          <TabsContent value="graph" className="flex-1 m-0">
+            <GraphView nodes={result.nodes} edges={result.edges} />
+          </TabsContent>
+        )}
 
-
-        <TabsContent value="graph" className="flex-1 m-0">
-          <GraphView nodes={graphNodes} edges={graphEdges} />
+        <TabsContent value="raw" className="flex-1 m-0 overflow-auto bg-muted/30">
+          <pre className="p-4 text-[11px] font-mono leading-relaxed whitespace-pre p-4">
+            {result ? JSON.stringify(result, null, 2) : "No result available"}
+          </pre>
         </TabsContent>
       </Tabs>
     </div>

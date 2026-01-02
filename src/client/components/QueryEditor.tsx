@@ -16,7 +16,7 @@ import { useEffect } from "react";
 interface QueryEditorProps {
   value: string;
   onChange: (value: string) => void;
-  onRun: () => void;
+  onRun: (query?: string) => void;
   onSave?: () => void;
 }
 
@@ -43,8 +43,30 @@ const appThemeOverrides = EditorView.theme({
   }
 });
 
+import { useRef, useCallback } from "react";
+import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
+
 export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps) {
-  
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+
+  const handleRun = useCallback(() => {
+    const view = editorRef.current?.view;
+    if (!view) {
+      onRun();
+      return;
+    }
+
+    const { from, to } = view.state.selection.main;
+    const selection = view.state.doc.sliceString(from, to);
+    
+    // If something is selected, run only that. Otherwise run the whole content.
+    if (selection && selection.trim().length > 0) {
+      onRun(selection);
+    } else {
+      onRun();
+    }
+  }, [onRun]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -53,18 +75,19 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        onRun();
+        handleRun();
       }
     };
     
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onRun, onSave]);
+  }, [onSave, handleRun]);
 
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="flex-1 relative overflow-hidden">
         <CodeMirror
+          ref={editorRef}
           value={value}
           height="100%"
           theme={dracula}
@@ -74,7 +97,7 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
           basicSetup={{
             lineNumbers: true,
             foldGutter: false,
-            highlightActiveLine: true, // Dracula handles this well
+            highlightActiveLine: true,
             highlightActiveLineGutter: true,
             drawSelection: true,
           }}
@@ -125,7 +148,7 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
                </Button>
              )}
             <Button 
-              onClick={onRun} 
+              onClick={handleRun} 
               size="sm" 
               className="h-7 gap-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20"
             >
