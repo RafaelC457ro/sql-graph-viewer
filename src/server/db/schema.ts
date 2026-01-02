@@ -28,3 +28,17 @@ export const files = sqliteTable("files", {
     .default(sql`(unixepoch())`),
 });
 
+
+// Sessions table for connection management
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(), // Using text because we'll generate UUIDs
+  name: text("name").notNull().default("Unnamed Server"),
+  connectionConfig: text("connection_config", { mode: "json" }).notNull(),
+  category: text("category").notNull().default("development"), // production | development
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  lastActiveAt: integer("last_active_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});

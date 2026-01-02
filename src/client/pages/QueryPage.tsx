@@ -10,30 +10,7 @@ import { QueryEditor } from "@/components/QueryEditor";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { useQueryTabs } from "@/hooks/useQueryTabs";
 import { useFiles, useUpdateFile, useCreateFile } from "@/hooks/useFiles";
-
-// Mock data for demonstration
-const mockResults = {
-  columns: ["id", "name", "color_source", "hex_value"],
-  rows: [
-    { id: 1, name: "Coral", color_source: "CRAYOLA", hex_value: "#FF7F50" },
-    { id: 2, name: "Azure", color_source: "COLORHEXA", hex_value: "#007FFF" },
-    { id: 3, name: "Emerald", color_source: "PANTONE", hex_value: "#50C878" },
-  ],
-};
-
-const mockGraphData = {
-  nodes: [
-    { id: "1", label: "Person" },
-    { id: "2", label: "Company" },
-    { id: "3", label: "Product" },
-    { id: "4", label: "City" },
-  ],
-  edges: [
-    { source: "1", target: "2", label: "WORKS_AT" },
-    { source: "2", target: "3", label: "PRODUCES" },
-    { source: "1", target: "4", label: "LIVES_IN" },
-  ],
-};
+import { useQueryExecution } from "@/hooks/useConnection";
 
 // Helper to generate unique name with (1), (2), etc.
 function getUniqueName(baseName: string, existingNames: string[]): string {
@@ -144,11 +121,24 @@ export function QueryPage() {
     }
   };
 
-  const [hasRun, setHasRun] = useState(false);
+  const queryExecution = useQueryExecution();
+  const [queryResult, setQueryResult] = useState<{ rows: any[], columns: string[] } | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
 
-  const handleRun = () => {
-    setHasRun(true);
-    console.log("Running query:", activeTab?.content);
+  const handleRun = async () => {
+    if (!activeTab?.content) return;
+    
+    setExecutionError(null);
+    try {
+      const result = await queryExecution.mutateAsync(activeTab.content);
+      // Results from /api/query are in format { rows, fields }
+      // Fields contains [{ name, dataTypeID }]
+      const columns = result.fields.map((f: any) => f.name);
+      setQueryResult({ rows: result.rows, columns });
+    } catch (e) {
+      console.error(e);
+      setExecutionError(e instanceof Error ? e.message : "Query failed");
+    }
   };
 
   return (
@@ -175,10 +165,12 @@ export function QueryPage() {
 
         <ResizablePanel defaultSize={50} minSize={20}>
           <ResultsPanel
-            columns={hasRun ? mockResults.columns : []}
-            rows={hasRun ? mockResults.rows : []}
-            graphNodes={hasRun ? mockGraphData.nodes : []}
-            graphEdges={hasRun ? mockGraphData.edges : []}
+            columns={queryResult?.columns || []}
+            rows={queryResult?.rows || []}
+            graphNodes={[]} // Graph display will be implemented later
+            graphEdges={[]}
+            isLoading={queryExecution.isPending}
+            error={executionError}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

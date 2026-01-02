@@ -3,14 +3,21 @@ import { Layout } from "./components/Layout";
 import { QueryPage } from "./pages/QueryPage";
 import { NotFound } from "./pages/NotFound";
 
+import { ProtectedRoute } from "./components/ProtectedRoute";
+
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: (
-      <Layout>
-        <QueryPage />
-      </Layout>
-    ),
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "/",
+        element: (
+          <Layout>
+            <QueryPage />
+          </Layout>
+        ),
+      },
+    ],
   },
   {
     path: "*",
