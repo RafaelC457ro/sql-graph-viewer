@@ -1,88 +1,23 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
-import ReactFlow, {
-  Background,
-  Controls,
-  Handle,
-  Position,
-  MarkerType,
-  useNodesState,
-  useEdgesState,
-} from "reactflow";
-import type { Node, Edge, NodeProps } from "reactflow";
-import "reactflow/dist/style.css";
-import { X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ZoomIn, ZoomOut, Maximize2, Orbit, X } from "lucide-react";
 import dagre from "dagre";
+import { ReactFlowRenderer } from "./graph/ReactFlowRenderer";
+import { CytoscapeRenderer } from "./graph/CytoscapeRenderer";
+import {
+  type CanvasControls,
+  type NormalizedEdge,
+  type NormalizedNode,
+} from "./graph/graph-types";
+import { getColorForLabel } from "./graph/graph-colors";
+import { Button } from "./ui/button";
+import { useGraphRenderer } from "@/hooks/useGraphRenderer";
+import type { GraphResult } from "../../shared/types";
 
-// Premium vibrant color palette for node types (Hex for better compatibility with SVG elements)
-const COLOR_PALETTE = [
-  "#3b82f6", // Blue
-  "#10b981", // Emerald
-  "#f43f5e", // Rose
-  "#f59e0b", // Amber
-  "#8b5cf6", // Violet
-  "#ec4899", // Pink
-  "#06b6d4", // Cyan
-  "#84cc16", // Lime
-  "#f97316", // Orange
-  "#6366f1", // Indigo
-];
-
-const getColorForLabel = (label: string = "") => {
-  if (!label) return "#3b82f6";
-  // Simple hash for consistent color mapping
-  let hash = 0;
-  for (let i = 0; i < label.length; i++) {
-    hash = label.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % COLOR_PALETTE.length;
-  return COLOR_PALETTE[index];
-};
-
-// Custom Graph Entity Node
-const GraphEntityNode = ({ data, selected }: NodeProps) => {
-  const bgColor = getColorForLabel(data.vertexLabel || data.label);
-  
-  return (
-    <div
-      className={`relative flex flex-col items-center justify-center w-20 h-20 p-2 rounded-full border-2 
-        ${selected ? "border-white ring-4 ring-white/30" : "border-white/10"} 
-        shadow-xl transition-all hover:scale-105 active:scale-95 group`}
-      style={{ backgroundColor: bgColor }}
-    >
-      <Handle 
-        type="target" 
-        position={Position.Top} 
-        className="w-2 h-2 !bg-white border-2 border-black/20" 
-      />
-      
-      <div className="flex flex-col items-center justify-center text-center gap-0.5 px-1 overflow-hidden">
-        <span className="text-[10px] font-black text-white max-w-[68px] line-clamp-2 leading-tight drop-shadow-sm">
-          {data.label}
-        </span>
-        {data.vertexLabel && (
-          <div className="mt-0.5 px-1.5 py-0.5 bg-black/20 rounded-full">
-            <span className="text-[7px] font-medium text-white/90 uppercase tracking-wider block">
-              {data.vertexLabel}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <Handle 
-        type="source" 
-        position={Position.Bottom} 
-        className="w-2 h-2 !bg-white border-2 border-black/20" 
-      />
-    </div>
-  );
-};
-
-// Properties Visualizer Component
 const PropertiesPanel = ({
   data,
   onClose,
 }: {
-  data: any;
+  data: Record<string, any>;
   onClose: () => void;
 }) => {
   if (!data) return null;
@@ -93,8 +28,10 @@ const PropertiesPanel = ({
     <div className="absolute top-4 right-4 w-72 bg-[oklch(0.12_0_0)]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between p-3 border-b border-white/10 bg-white/5">
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Properties</span>
-          <span className="text-xs font-semibold text-white leading-tight truncate max-w-[200px]">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+            Properties
+          </span>
+          <span className="text-xs font-semibold text-white leading-tight truncate max-w-50">
             {data.vertexLabel || data.edgeLabel || "Entity"}
           </span>
         </div>
@@ -107,22 +44,29 @@ const PropertiesPanel = ({
       </div>
       <div className="p-4 space-y-3 overflow-y-auto max-h-[60vh] custom-scrollbar">
         {Object.entries(properties).map(([key, value]) => (
-          <div key={key} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+          <div
+            key={key}
+            className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0 last:pb-0"
+          >
             <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-tight">
               {key}
             </span>
-            <span className="text-xs text-white font-medium break-words">
-              {typeof value === "object" ? (
+            <span className="text-xs text-white font-medium wrap-break-word">
+              {typeof value === "object" && value !== null ? (
                 <pre className="text-[10px] mt-1 p-2 bg-black/30 rounded-md overflow-x-auto">
                   {JSON.stringify(value, null, 2)}
                 </pre>
-              ) : String(value)}
+              ) : (
+                String(value)
+              )}
             </span>
           </div>
         ))}
         {Object.keys(properties).length === 0 && (
           <div className="text-center py-4">
-            <span className="text-xs text-muted-foreground italic">No properties found</span>
+            <span className="text-xs text-muted-foreground italic">
+              No properties found
+            </span>
           </div>
         )}
       </div>
@@ -133,15 +77,45 @@ const PropertiesPanel = ({
 const nodeWidth = 80;
 const nodeHeight = 80;
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+type GraphNodeInput = GraphResult["nodes"][number];
+type GraphEdgeInput = GraphResult["edges"][number];
+
+const PHYSICS_STORAGE_KEY = "age-viewer.graph-physics";
+
+const loadInitialPhysicsPreference = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return window.localStorage.getItem(PHYSICS_STORAGE_KEY) === "true";
+};
+
+const persistPhysicsPreference = (value: boolean) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.setItem(PHYSICS_STORAGE_KEY, value ? "true" : "false");
+  } catch (error) {
+    console.warn("Failed to persist physics preference", error);
+  }
+};
+
+const normalizeGraphData = (
+  nodes: GraphNodeInput[],
+  edges: GraphEdgeInput[]
+) => {
+  if (nodes.length === 0) {
+    return { nodes: [] as NormalizedNode[], edges: [] as NormalizedEdge[] };
+  }
+
   const dagreGraph = new dagre.graphlib.Graph({ multigraph: true });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ 
-    rankdir: "TB", 
-    marginx: 100, 
+  dagreGraph.setGraph({
+    rankdir: "TB",
+    marginx: 100,
     marginy: 100,
     nodesep: 80,
-    ranksep: 120
+    ranksep: 120,
   });
 
   nodes.forEach((node) => {
@@ -149,81 +123,118 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   });
 
   edges.forEach((edge) => {
-    // Crucial for multigraph: use the edge ID to distinguish multiple relationships
     dagreGraph.setEdge(edge.source, edge.target, {}, edge.id);
   });
 
   dagre.layout(dagreGraph);
 
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
+  const normalizedNodes = nodes.map<NormalizedNode>((node) => {
+    const layoutNode = dagreGraph.node(node.id) as
+      | { x: number; y: number }
+      | undefined;
+    const data = node.data ? { ...node.data } : {};
+    const vertexLabel =
+      typeof data.vertexLabel === "string" ? data.vertexLabel : undefined;
+    const label = typeof data.label === "string" ? data.label : undefined;
+    const color: string = getColorForLabel(vertexLabel ?? label ?? node.id);
+
     return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - nodeWidth / 2,
-        y: nodeWithPosition.y - nodeHeight / 2,
-      },
+      id: node.id,
+      data,
+      position: layoutNode
+        ? { x: layoutNode.x - nodeWidth / 2, y: layoutNode.y - nodeHeight / 2 }
+        : node.position ?? { x: 0, y: 0 },
+      color,
     };
   });
 
-  return { layoutedNodes, layoutedEdges: edges };
+  const normalizedEdges: NormalizedEdge[] = edges.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    label: edge.label,
+    data: edge.data ? { ...edge.data } : {},
+  }));
+
+  return { nodes: normalizedNodes, edges: normalizedEdges };
 };
 
 interface GraphViewProps {
-  nodes?: Node[];
-  edges?: Edge[];
+  nodes?: GraphNodeInput[];
+  edges?: GraphEdgeInput[];
 }
 
 export function GraphView({
   nodes: userNodes = [],
   edges: userEdges = [],
 }: GraphViewProps) {
-  const nodeTypes = useMemo(() => ({ entity: GraphEntityNode }), []);
+  const { renderer } = useGraphRenderer();
+  const [selectedData, setSelectedData] = useState<Record<string, any> | null>(
+    null
+  );
+  const [physicsEnabled, setPhysicsEnabled] = useState(() =>
+    loadInitialPhysicsPreference()
+  );
+  const controlsRef = useRef<CanvasControls | null>(null);
+  const [controlsAvailable, setControlsAvailable] = useState(false);
 
-  const { layoutedNodes, layoutedEdges } = useMemo(() => {
-    const nodes: Node[] = userNodes.map((n) => ({ 
-      ...n, 
-      type: "entity" 
-    }));
-    const edges: Edge[] = userEdges.map((e) => ({
-      ...e,
-      type: "smoothstep", // Use smoothstep for better visual connectivity
-      labelShowBg: true,
-      labelBgPadding: [4, 2],
-      labelBgStyle: {
-        fill: "#1a1a1a",
-        rx: 4,
-        stroke: "#333",
-        strokeWidth: 1,
-      },
-      labelStyle: { fill: "#fefefe", fontSize: 10, fontWeight: 500 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#999" },
-      style: { stroke: "#999", strokeWidth: 2 },
-    }));
-
-    if (nodes.length === 0) return { layoutedNodes: [], layoutedEdges: [] };
-
-    return getLayoutedElements(nodes, edges);
-  }, [userNodes, userEdges]);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
-  const [selectedElement, setSelectedElement] = useState<any>(null);
+  const normalized = useMemo(
+    () => normalizeGraphData(userNodes, userEdges),
+    [userNodes, userEdges]
+  );
+  const physicsAvailable = normalized.nodes.length > 1;
 
   useEffect(() => {
-    setNodes(layoutedNodes);
-    setEdges(layoutedEdges);
-  }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);
+    if (!physicsAvailable && physicsEnabled) {
+      setPhysicsEnabled((current) => {
+        if (!current) {
+          return current;
+        }
+        persistPhysicsPreference(false);
+        return false;
+      });
+    }
+  }, [physicsAvailable, physicsEnabled]);
 
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    setSelectedElement({ type: "node", ...node });
+  const handleSelect = useCallback((data: Record<string, any> | null) => {
+    setSelectedData(data);
   }, []);
 
-  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
-    setSelectedElement({ type: "edge", ...edge });
+  const registerControls = useCallback((controls: CanvasControls | null) => {
+    controlsRef.current = controls;
+    setControlsAvailable(Boolean(controls));
   }, []);
 
-  if (nodes.length === 0) {
+  const handleZoomIn = useCallback(() => {
+    controlsRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    controlsRef.current?.zoomOut();
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    controlsRef.current?.fitView();
+  }, []);
+
+  const handleTogglePhysics = useCallback(() => {
+    setPhysicsEnabled((prev) => {
+      const next = !prev;
+      persistPhysicsPreference(next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    setSelectedData(null);
+  }, [renderer, userNodes, userEdges]);
+
+  useEffect(() => {
+    controlsRef.current = null;
+    setControlsAvailable(false);
+  }, [renderer]);
+
+  if (normalized.nodes.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground uppercase tracking-widest text-xs font-semibold bg-[oklch(0.09_0_0)]">
         No graph data to visualize
@@ -233,27 +244,74 @@ export function GraphView({
 
   return (
     <div className="relative w-full h-full bg-[oklch(0.09_0_0)]">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
-        onEdgeClick={onEdgeClick}
-        fitView
-        className="bg-transparent"
-        minZoom={0.5}
-        maxZoom={4}
-      >
-        <Background gap={12} size={1} color="oklch(0.22 0 0)" />
-        <Controls />
-      </ReactFlow>
+      <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
+        <div className="flex items-center overflow-hidden rounded-md border border-white/10 bg-[oklch(0.12_0_0)]/85 shadow-lg backdrop-blur">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={handleZoomIn}
+            disabled={!controlsAvailable}
+            title="Zoom in"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={handleZoomOut}
+            disabled={!controlsAvailable}
+            title="Zoom out"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={handleResetView}
+            disabled={!controlsAvailable}
+            title="Reset view"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button
+          variant={physicsEnabled ? "secondary" : "outline"}
+          size="sm"
+          className="h-8 gap-1 px-3 text-xs"
+          onClick={handleTogglePhysics}
+          disabled={!physicsAvailable}
+          title="Toggle physics layout"
+        >
+          <Orbit className="h-4 w-4" />
+          <span>{physicsEnabled ? "Physics on" : "Physics off"}</span>
+        </Button>
+      </div>
 
-      {selectedElement && (
+      {renderer === "cytoscape" ? (
+        <CytoscapeRenderer
+          nodes={normalized.nodes}
+          edges={normalized.edges}
+          physicsEnabled={physicsEnabled}
+          onSelect={handleSelect}
+          registerControls={registerControls}
+        />
+      ) : (
+        <ReactFlowRenderer
+          nodes={normalized.nodes}
+          edges={normalized.edges}
+          physicsEnabled={physicsEnabled}
+          onSelect={handleSelect}
+          registerControls={registerControls}
+        />
+      )}
+
+      {selectedData !== null && (
         <PropertiesPanel
-          data={selectedElement.data}
-          onClose={() => setSelectedElement(null)}
+          data={selectedData}
+          onClose={() => setSelectedData(null)}
         />
       )}
     </div>

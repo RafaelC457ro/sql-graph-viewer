@@ -14,7 +14,8 @@ import { router } from "./router";
 // Suppress ResizeObserver loop errors which are often benign in development
 window.addEventListener("error", (e) => {
   if (
-    e.message === "ResizeObserver loop completed with undelivered notifications." ||
+    e.message ===
+      "ResizeObserver loop completed with undelivered notifications." ||
     e.message === "ResizeObserver loop limit exceeded"
   ) {
     e.stopImmediatePropagation();
@@ -22,6 +23,7 @@ window.addEventListener("error", (e) => {
 });
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GraphRendererProvider } from "@/hooks/useGraphRenderer";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +31,9 @@ const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <GraphRendererProvider>
+        <RouterProvider router={router} />
+      </GraphRendererProvider>
     </QueryClientProvider>
   </StrictMode>
 );
