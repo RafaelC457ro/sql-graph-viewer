@@ -2,6 +2,9 @@
 
 A modern, fast database viewer for Apache AGE (PostgreSQL-based graph database). Built with Bun, Elysia, and React.
 
+![Query Editor and Results](docs/img1.png)
+![Graph Visualization](docs/img2.png)
+
 ## Features
 
 - **Standardized Connections**: Manage and save multiple database connection profiles.
