@@ -11,13 +11,22 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 interface ResultsTableProps {
   columns: string[];
   rows: Record<string, unknown>[];
+  isSuccess: boolean;
 }
 
-export function ResultsTable({ columns, rows }: ResultsTableProps) {
-  if (columns.length === 0) {
+export function ResultsTable({ columns, rows, isSuccess }: ResultsTableProps) {
+  if (!isSuccess) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         Click Run to execute your query.
+      </div>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground italic text-sm">
+        Executed. No rows returned.
       </div>
     );
   }

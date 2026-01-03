@@ -11,43 +11,81 @@ import { sql } from "@codemirror/lang-sql";
 import { EditorView } from "@codemirror/view";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
 
 interface QueryEditorProps {
   value: string;
   onChange: (value: string) => void;
   onRun: (query?: string) => void;
   onSave?: () => void;
+  schema?: Record<string, string[]>;
 }
 
-const databases = [
-  { id: "postgres", name: "postgres" },
-  { id: "graph", name: "graph_db" },
-];
-
-const appThemeOverrides = EditorView.theme({
+const appTheme = EditorView.theme({
   "&": {
-    backgroundColor: "transparent !important",
+    backgroundColor: "var(--background) !important",
+    color: "var(--foreground)",
     height: "100%",
   },
-  ".cm-gutters": {
-    backgroundColor: "transparent !important",
-    border: "none",
+  ".cm-content": {
+    caretColor: "var(--primary)",
+    fontFamily: "var(--font-mono)",
+  },
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeft: "2px solid var(--primary) !important",
   },
   "&.cm-focused": {
     outline: "none !important",
   },
-  // Ensure cursor is visible (Dracula sets it, but we confirm z-index/visibility)
-  ".cm-cursor": {
-    borderLeftWidth: "2px", // Make it slightly thicker "pipe"
-  }
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
+    backgroundColor: "var(--accent) !important",
+    opacity: "0.4",
+  },
+  ".cm-gutters": {
+    backgroundColor: "var(--background) !important",
+    color: "var(--muted-foreground)",
+    border: "none",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "rgba(255, 255, 255, 0.03) !important",
+  },
+  ".cm-activeLineGutter": {
+    backgroundColor: "transparent !important",
+    color: "var(--foreground)",
+  },
+  ".cm-foldPlaceholder": {
+    backgroundColor: "transparent",
+    border: "none",
+    color: "#ddd",
+  },
+  ".cm-tooltip": {
+    border: "1px solid var(--border)",
+    backgroundColor: "var(--popover)",
+  },
+  ".cm-tooltip-autocomplete": {
+    "& > ul > li[aria-selected]": {
+      backgroundColor: "var(--accent)",
+      color: "var(--accent-foreground)",
+    },
+  },
 });
 
-import { useRef, useCallback } from "react";
-import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
-
-export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps) {
+export function QueryEditor({
+  value,
+  onChange,
+  onRun,
+  onSave,
+  schema,
+}: QueryEditorProps) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
+
+  const sqlExtension = useMemo(() => {
+    return sql({
+      schema: schema || {},
+      upperCaseKeywords: true,
+    });
+  }, [schema]);
 
   const handleRun = useCallback(() => {
     const view = editorRef.current?.view;
@@ -58,8 +96,7 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
 
     const { from, to } = view.state.selection.main;
     const selection = view.state.doc.sliceString(from, to);
-    
-    // If something is selected, run only that. Otherwise run the whole content.
+
     if (selection && selection.trim().length > 0) {
       onRun(selection);
     } else {
@@ -78,7 +115,7 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
         handleRun();
       }
     };
-    
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onSave, handleRun]);
@@ -91,7 +128,7 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
           value={value}
           height="100%"
           theme={dracula}
-          extensions={[sql(), appThemeOverrides]}
+          extensions={[sqlExtension, appTheme]}
           onChange={onChange}
           className="h-full text-sm font-mono border-none"
           basicSetup={{
@@ -104,59 +141,28 @@ export function QueryEditor({ value, onChange, onRun, onSave }: QueryEditorProps
         />
       </div>
 
-      <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-[oklch(0.12_0_0)]">
+      <div className="flex items-center justify-end px-4 py-2 border-t border-border bg-card">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Source</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 h-7 text-xs bg-transparent">
-                Primary Database
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>Primary Database</DropdownMenuItem>
-              <DropdownMenuItem>Read Replica</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <span className="text-xs text-muted-foreground">Role</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 h-7 text-xs bg-transparent">
-                postgres
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {databases.map((db) => (
-                <DropdownMenuItem key={db.id}>{db.name}</DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="flex items-center gap-2">
-             {onSave && (
-               <Button
-                 onClick={onSave}
-                 variant="secondary"
-                 size="sm"
-                 className="h-7 text-xs"
-               >
-                 Save
-               </Button>
-             )}
-            <Button 
-              onClick={handleRun} 
-              size="sm" 
-              className="h-7 gap-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20"
+          {onSave && (
+            <Button
+              onClick={onSave}
+              variant="secondary"
+              size="sm"
+              className="h-7 text-xs"
             >
-              <span>Run</span>
-              <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border border-white/20 bg-white/10 px-1 font-mono text-[9px] font-medium">
-                ⌘ ↵
-              </kbd>
+              Save
             </Button>
+          )}
+          <Button
+            onClick={handleRun}
+            size="sm"
+            className="h-7 gap-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20"
+          >
+            <span>Run</span>
+            <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border border-white/20 bg-white/10 px-1 font-mono text-[9px] font-medium">
+              ⌘ ↵
+            </kbd>
+          </Button>
         </div>
       </div>
     </div>

@@ -11,16 +11,32 @@ export interface ConnectionParams {
   name?: string;
 }
 
+export interface ConnectionDefinition {
+  id: string;
+  name: string;
+  category: string;
+  lastActiveAt: string;
+  connection: {
+    host: string;
+    database: string;
+    user?: string;
+    port?: string;
+    graph?: string;
+  }
+}
+
 export interface SessionStatus {
   id?: string;
   connected: boolean;
   name?: string;
   category?: string;
+  lastActiveAt?: string;
   connection?: {
     host: string;
     database: string;
-    user: string;
-    graph: string;
+    user?: string;
+    port?: string;
+    graph?: string;
   }
 }
 
@@ -72,22 +88,50 @@ export const executeQuery = async (query: string): Promise<QueryResult> => {
     return data.data;
 }
 
-export const getSavedSessions = async (): Promise<SessionStatus[]> => {
-  const res = await fetch("/api/sessions");
+export const getSavedConnections = async (): Promise<ConnectionDefinition[]> => {
+  const res = await fetch("/api/connections");
   if (!res.ok) {
-    throw new Error("Failed to fetch saved sessions");
+    throw new Error("Failed to fetch saved connections");
   }
   return res.json();
 };
 
-export const activateSession = async (id: string) => {
-  const res = await fetch(`/api/sessions/${id}/activate`, {
+export const activateConnection = async (id: string) => {
+  const res = await fetch(`/api/connections/${id}/activate`, {
     method: "POST",
   });
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || "Failed to activate session");
+    throw new Error(data.message || "Failed to activate connection");
   }
   return data;
 };
+
+export interface UpdateConnectionParams {
+  name?: string;
+  category?: string;
+  connectionConfig?: any;
+}
+
+export async function deleteConnection(id: string) {
+  const res = await fetch(`/api/connections/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error("Failed to delete connection");
+  }
+  return res.json();
+}
+
+export async function updateConnection(id: string, params: UpdateConnectionParams) {
+  const res = await fetch(`/api/connections/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to update connection");
+  }
+  return res.json();
+}

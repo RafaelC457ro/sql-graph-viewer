@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { useEffect, useState } from "react";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,6 @@ import {
   RefreshCw 
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
-
-import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
   Popover, 
@@ -30,8 +28,14 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useSession, useConnection, useSessions, useActivateSession } from "@/hooks/useConnection";
+import { 
+  useSession, 
+  useConnection, 
+  useSavedConnections, 
+  useActivateConnection 
+} from "@/hooks/useConnection";
 import { ConnectionDialog } from "./ConnectionDialog";
+import type { ConnectionDefinition } from "@/api/connection";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -39,15 +43,18 @@ interface LayoutProps {
 
 interface ServerSelectorProps {
   onOpenNew: () => void;
+  savedConnections: ConnectionDefinition[] | undefined;
+  activate: any;
+  targetConnectionId: string | null;
+  setTargetConnectionId: (id: string | null) => void;
 }
 
-function ServerSelector({ onOpenNew }: ServerSelectorProps) {
+function ServerSelector({ onOpenNew, savedConnections, activate, targetConnectionId, setTargetConnectionId }: ServerSelectorProps) {
   const [open, setOpen] = useState(false);
   const { session } = useSession();
-  const { data: savedSessions } = useSessions();
-  const activate = useActivateSession();
 
-  const currentServer = session?.name || "Select Server";
+  const currentSelection = savedConnections?.find(s => s.id === targetConnectionId);
+  const currentServer = session?.connected ? session.name : (currentSelection?.name || "Select Server");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -74,34 +81,44 @@ function ServerSelector({ onOpenNew }: ServerSelectorProps) {
           <CommandList className="max-h-[300px]">
             <CommandEmpty className="py-6 text-xs text-center text-muted-foreground">No server found.</CommandEmpty>
             <CommandGroup heading={<span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70 px-2">Saved Connections</span>}>
-              {savedSessions?.map((s) => (
+              {savedConnections?.map((s) => (
                 <CommandItem
                   key={s.id}
-                  value={s.name}
+                  value={`${s.name?.toLowerCase()} ${s.connection?.host?.toLowerCase()} ${s.id}`}
                   onSelect={() => {
                     if (s.id) {
-                      activate.mutate(s.id);
+                      setTargetConnectionId(s.id);
                       setOpen(false);
                     }
                   }}
                   className="text-xs py-2 cursor-pointer focus:bg-accent focus:text-accent-foreground"
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-3.5 w-3.5 text-[oklch(0.55_0.22_145)]",
-                      session?.name === s.name ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex flex-col gap-0.5 overflow-hidden">
-                    <span className="truncate font-medium">{s.name}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn(
-                        "text-[9px] px-1 rounded-[2px] font-bold uppercase",
-                        s.category === "production" ? "bg-red-500/10 text-red-400" : "bg-[oklch(0.55_0.22_145)]/10 text-[oklch(0.55_0.22_145)]"
-                      )}>
-                        {s.category}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground truncate">{s.connection?.host}</span>
+                  <div 
+                    className="flex items-center w-full"
+                    onClick={() => {
+                      if (s.id) {
+                        setTargetConnectionId(s.id);
+                        setOpen(false);
+                      }
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-3.5 w-3.5 text-[oklch(0.55_0.22_145)]",
+                        (session?.connected ? session.id : targetConnectionId) === s.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex flex-col gap-0.5 overflow-hidden">
+                      <span className="truncate font-medium">{s.name || "Unnamed Server"}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn(
+                          "text-[9px] px-1 rounded-[2px] font-bold uppercase",
+                          s.category === "production" ? "bg-red-500/10 text-red-400" : "bg-[oklch(0.55_0.22_145)]/10 text-[oklch(0.55_0.22_145)]"
+                        )}>
+                          {s.category}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground truncate">{s.connection?.host}</span>
+                      </div>
                     </div>
                   </div>
                 </CommandItem>
@@ -129,16 +146,36 @@ function ServerSelector({ onOpenNew }: ServerSelectorProps) {
 
 interface HeaderProps {
   onOpenConnection: () => void;
+  onEditConnection: (id: string, s: any) => void;
+  targetConnectionId: string | null;
+  setTargetConnectionId: (id: string | null) => void;
 }
 
-function Header({ onOpenConnection }: HeaderProps) {
+function Header({ onOpenConnection, onEditConnection, targetConnectionId, setTargetConnectionId }: HeaderProps) {
   const { state, toggleSidebar } = useSidebar();
   const { session } = useSession();
   const { disconnect } = useConnection();
+  const { data: savedConnections } = useSavedConnections();
+  const activate = useActivateConnection();
   const isCollapsed = state === "collapsed";
 
+  const handleConnect = () => {
+    if (targetConnectionId) {
+      activate.mutate(targetConnectionId, {
+        onError: () => {
+          const s = savedConnections?.find(x => x.id === targetConnectionId);
+          if (s) {
+            onEditConnection(s.id, s);
+          }
+        }
+      });
+    } else {
+      onOpenConnection();
+    }
+  };
+
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-[oklch(0.12_0_0)] px-4">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -151,7 +188,13 @@ function Header({ onOpenConnection }: HeaderProps) {
         
         <Separator orientation="vertical" className="h-4" />
         
-        <ServerSelector onOpenNew={onOpenConnection} />
+        <ServerSelector 
+          onOpenNew={onOpenConnection} 
+          savedConnections={savedConnections}
+          activate={activate}
+          targetConnectionId={targetConnectionId}
+          setTargetConnectionId={setTargetConnectionId}
+        />
 
         {session?.connected ? (
           <div className="flex items-center gap-2">
@@ -182,9 +225,10 @@ function Header({ onOpenConnection }: HeaderProps) {
             variant="outline" 
             size="sm" 
             className="h-7 text-xs rounded-full gap-1.5 px-3 bg-transparent border-border hover:bg-accent hover:text-accent-foreground"
-            onClick={onOpenConnection}
+            onClick={handleConnect}
+            disabled={activate.isPending}
           >
-            <Plug className="h-3.5 w-3.5" />
+            {activate.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plug className="h-3.5 w-3.5" />}
             Connect
           </Button>
         )}
@@ -199,17 +243,64 @@ function Header({ onOpenConnection }: HeaderProps) {
 
 export function Layout({ children }: LayoutProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editConnection, setEditConnection] = useState<{ id: string; data: any } | null>(null);
+  const [targetConnectionId, setTargetConnectionId] = useState<string | null>(null);
+  const { session } = useSession();
+  const { data: savedConnections } = useSavedConnections();
+
+  useEffect(() => {
+    if (session?.connected && session.id) {
+      setTargetConnectionId(session.id);
+    } else if (!targetConnectionId && savedConnections && savedConnections.length > 0) {
+      const firstConnection = savedConnections[0];
+      if (firstConnection?.id) {
+        setTargetConnectionId(firstConnection.id);
+      }
+    }
+  }, [session, savedConnections, targetConnectionId]);
+
+  const handleOpenNew = () => {
+    setEditConnection(null);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (id: string, s: any) => {
+    setEditConnection({ 
+      id, 
+      data: {
+        host: s.connection.host,
+        port: s.connection.port || "5432",
+        database: s.connection.database,
+        user: s.connection.user,
+        password: "",
+        graph: s.connection.graph,
+        name: s.name,
+        category: s.category
+      }
+    });
+    setDialogOpen(true);
+  };
 
   return (
     <SidebarProvider style={{ "--sidebar-width": "19rem" } as React.CSSProperties}>
-      <AppSidebar />
-      <SidebarInset className="flex flex-col h-screen bg-[oklch(0.09_0_0)] min-w-0 overflow-hidden">
-        <Header onOpenConnection={() => setDialogOpen(true)} />
-        <div className="flex-1 min-h-0 overflow-hidden bg-[oklch(0.12_0_0)]">
+      <AppSidebar onEditConnection={handleEdit} />
+      <SidebarInset className="flex flex-col h-screen bg-background min-w-0 overflow-hidden">
+        <Header 
+          onOpenConnection={handleOpenNew} 
+          onEditConnection={handleEdit}
+          targetConnectionId={targetConnectionId}
+          setTargetConnectionId={setTargetConnectionId}
+        />
+        <div className="flex-1 min-h-0 overflow-hidden bg-background">
           {children}
         </div>
       </SidebarInset>
-      <ConnectionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <ConnectionDialog 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen} 
+        initialData={editConnection?.data}
+        connectionId={editConnection?.id}
+      />
     </SidebarProvider>
   );
 }

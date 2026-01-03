@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { useConnection } from "@/hooks/useConnection";
+import { useConnection, useUpdateConnection } from "@/hooks/useConnection";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,18 +42,23 @@ const formSchema = z.object({
   category: z.enum(["production", "development"]),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 interface ConnectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: FormValues | null;
+  connectionId?: string | null;
 }
 
-export function ConnectionDialog({ open, onOpenChange }: ConnectionDialogProps) {
+export function ConnectionDialog({ open, onOpenChange, initialData, connectionId }: ConnectionDialogProps) {
   const { connect } = useConnection();
+  const updateConnection = useUpdateConnection();
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       host: "localhost",
       port: "5432",
       database: "postgres",
@@ -65,24 +70,63 @@ export function ConnectionDialog({ open, onOpenChange }: ConnectionDialogProps) 
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        form.reset(initialData);
+      } else {
+        form.reset({
+          host: "localhost",
+          port: "5432",
+          database: "postgres",
+          user: "postgres",
+          password: "",
+          graph: "age_graph",
+          name: "Local PostgreSQL",
+          category: "development",
+        });
+      }
+    }
+  }, [open, initialData, form]);
+
+  function onSubmit(values: FormValues) {
     setError(null);
-    connect.mutate(values, {
-      onSuccess: () => {
-        onOpenChange(false);
-        form.reset();
-      },
-      onError: (err: any) => {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      },
-    });
+    if (connectionId && initialData) {
+      const { name, category, ...config } = values;
+      updateConnection.mutate({ 
+        id: connectionId, 
+        params: { 
+          name, 
+          category, 
+          connectionConfig: config 
+        } 
+      }, {
+        onSuccess: () => {
+          onOpenChange(false);
+          form.reset();
+        },
+        onError: (err: any) => {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        },
+      });
+    } else {
+      connect.mutate(values, {
+        onSuccess: () => {
+          onOpenChange(false);
+          form.reset();
+        },
+        onError: (err: any) => {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        },
+      });
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden gap-0">
         <DialogHeader className="p-6 pb-2">
-          <DialogTitle>Connect to Database</DialogTitle>
+          <DialogTitle>{connectionId ? "Edit Connection" : "Connect to Database"}</DialogTitle>
           <DialogDescription>
             Enter your PostgreSQL + Apache AGE connection details.
           </DialogDescription>
@@ -210,8 +254,8 @@ export function ConnectionDialog({ open, onOpenChange }: ConnectionDialogProps) 
                     {error}
                   </div>
                 )}
-                <Button type="submit" className="w-full" disabled={connect.isPending}>
-                  {connect.isPending ? "Connecting..." : "Connect"}
+                <Button type="submit" className="w-full" disabled={connect.isPending || updateConnection.isPending}>
+                  {connectionId ? (updateConnection.isPending ? "Saving..." : "Save Changes") : (connect.isPending ? "Connecting..." : "Connect")}
                 </Button>
               </form>
             </Form>

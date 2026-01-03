@@ -4,9 +4,12 @@ import {
   disconnectFromDatabase, 
   executeQuery, 
   getSessionStatus, 
-  getSavedSessions,
-  activateSession,
-  type ConnectionParams 
+  getSavedConnections,
+  activateConnection,
+  deleteConnection,
+  updateConnection,
+  type ConnectionParams,
+  type UpdateConnectionParams
 } from "../api/connection";
 
 export const useConnection = () => {
@@ -16,14 +19,15 @@ export const useConnection = () => {
         mutationFn: (params: ConnectionParams) => connectToDatabase(params),
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ["session"] });
-             queryClient.invalidateQueries({ queryKey: ["sessions"] });
+             queryClient.invalidateQueries({ queryKey: ["connections"] });
         }
     });
 
     const disconnect = useMutation({
         mutationFn: disconnectFromDatabase,
         onSuccess: () => {
-             queryClient.clear(); // Clear all cache on disconnect
+             queryClient.invalidateQueries({ queryKey: ["session"] });
+             queryClient.invalidateQueries({ queryKey: ["connections"] });
         }
     });
 
@@ -48,19 +52,20 @@ export const useSession = () => {
     };
 };
 
-export const useSessions = () => {
+export const useSavedConnections = () => {
     return useQuery({
-        queryKey: ["sessions"],
-        queryFn: getSavedSessions,
+        queryKey: ["connections"],
+        queryFn: getSavedConnections,
     });
 };
 
-export const useActivateSession = () => {
+export const useActivateConnection = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (id: string) => activateSession(id),
+        mutationFn: (id: string) => activateConnection(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["session"] });
+            queryClient.invalidateQueries({ queryKey: ["connections"] });
         }
     });
 };
@@ -70,3 +75,25 @@ export const useQueryExecution = () => {
         mutationFn: (query: string) => executeQuery(query)
     });
 }
+
+export const useDeleteConnection = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => deleteConnection(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["connections"] });
+            queryClient.invalidateQueries({ queryKey: ["session"] });
+        }
+    });
+};
+
+export const useUpdateConnection = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, params }: { id: string; params: UpdateConnectionParams }) => updateConnection(id, params),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["connections"] });
+            queryClient.invalidateQueries({ queryKey: ["session"] });
+        }
+    });
+};

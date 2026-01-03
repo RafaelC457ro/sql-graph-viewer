@@ -1,7 +1,7 @@
 import { Elysia, t } from "elysia";
 import { randomUUID } from "crypto";
 import { db } from "../db";
-import { sessions } from "../db/schema";
+import { connections } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { ConnectionManager } from "../services/ConnectionManager";
 import { buildQueryResult } from "../utils/GraphBuilder";
@@ -16,7 +16,7 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
       const newSessionId = randomUUID();
 
       // 2. Save session to SQLite
-      db.insert(sessions).values({
+      db.insert(connections).values({
         id: newSessionId,
         name: name || "Unnamed Server",
         category: (category as string) || "development",
@@ -71,21 +71,21 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
       return { connected: false };
     }
 
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, id),
+    const connection = await db.query.connections.findFirst({
+      where: eq(connections.id, id),
     });
 
-    if (!session) {
+    if (!connection) {
       set.status = 401;
       return { connected: false };
     }
 
-    const config = session.connectionConfig as any;
+    const config = connection.connectionConfig as any;
 
     return {
       connected: true,
-      name: session.name,
-      category: session.category,
+      name: connection.name,
+      category: connection.category,
       connection: {
         host: config.host,
         database: config.database,
@@ -103,8 +103,7 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
       const manager = ConnectionManager.getInstance();
       await manager.closeConnection(id);
 
-      // 2. Remove from DB
-      db.delete(sessions).where(eq(sessions.id, id)).run();
+      // 2. Clear cookie (No longer deleting connection from DB)
 
       // 3. Clear cookie
       if (sessionId) {
@@ -131,7 +130,7 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
        const client = await manager.getConnection(id);
        
        const result = await client.query(query);
-       
+
        return {
          success: true,
          data: buildQueryResult({
@@ -152,31 +151,37 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
         query: t.String()
     })
   })
-  .get("/sessions", async () => {
-    const allSessions = await db.query.sessions.findMany({
-      orderBy: (sessions, { desc }) => [desc(sessions.lastActiveAt)],
+  .get("/connections", async () => {
+    const allConnections = await db.query.connections.findMany({
+      orderBy: (connections, { desc }) => [desc(connections.lastActiveAt)],
     });
 
-    return allSessions.map(s => ({
-      id: s.id,
-      name: s.name,
-      category: s.category,
-      lastActiveAt: s.lastActiveAt,
-      connection: {
-        host: (s.connectionConfig as any).host,
-        database: (s.connectionConfig as any).database,
-      }
-    }));
+    return allConnections.map(s => {
+      const config = s.connectionConfig as any;
+      return {
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        lastActiveAt: s.lastActiveAt,
+        connection: {
+          host: config.host,
+          port: config.port,
+          database: config.database,
+          user: config.user,
+          graph: config.graph,
+        }
+      };
+    });
   })
-  .post("/sessions/:id/activate", async ({ params: { id }, cookie: { sessionId }, set }) => {
+  .post("/connections/:id/activate", async ({ params: { id }, cookie: { sessionId }, set }) => {
     try {
-      const session = await db.query.sessions.findFirst({
-        where: eq(sessions.id, id),
+      const connection = await db.query.connections.findFirst({
+        where: eq(connections.id, id),
       });
 
-      if (!session) {
+      if (!connection) {
         set.status = 404;
-        return { success: false, message: "Session not found" };
+        return { success: false, message: "Connection not found" };
       }
 
       // Test connection
@@ -193,15 +198,54 @@ export const connectionRoutes = new Elysia({ prefix: "/api" })
         });
       }
 
-      // Update last active
-      await db.update(sessions)
-        .set({ lastActiveAt: new Date() })
-        .where(eq(sessions.id, id))
+      return { success: true };
+    } catch (error) {
+      set.status = 500;
+      return { success: false, message: error instanceof Error ? error.message : "Failed to activate connection" };
+    }
+  })
+  .delete("/connections/:id", async ({ params: { id }, set, cookie: { sessionId } }) => {
+    try {
+      const manager = ConnectionManager.getInstance();
+      
+      // If deleting the active session, disconnect it first
+      if (sessionId?.value === id) {
+        await manager.closeConnection(id);
+        sessionId.remove();
+      } else {
+        await manager.closeConnection(id);
+      }
+
+      await db.delete(connections).where(eq(connections.id, id)).run();
+      return { success: true };
+    } catch (error) {
+      set.status = 500;
+      return { success: false, message: error instanceof Error ? error.message : "Failed to delete connection" };
+    }
+  })
+  .patch("/connections/:id", async ({ params: { id }, body, set }) => {
+    try {
+      const { name, category, connectionConfig } = body;
+      
+      await db.update(connections)
+        .set({ 
+          ...(name && { name }), 
+          ...(category && { category }),
+          ...(connectionConfig && { connectionConfig }),
+          updatedAt: new Date() 
+        })
+        .where(eq(connections.id, id))
         .run();
 
       return { success: true };
     } catch (error) {
       set.status = 500;
-      return { success: false, message: error instanceof Error ? error.message : "Failed to activate session" };
+      return { success: false, message: error instanceof Error ? error.message : "Failed to update connection" };
     }
+  }, {
+    body: t.Object({
+      name: t.Optional(t.String()),
+      category: t.Optional(t.String()),
+      connectionConfig: t.Optional(t.Any())
+    })
   });

@@ -310,7 +310,7 @@ export function ReactFlowRenderer({
       minZoom={0.5}
       maxZoom={4}
     >
-      <Background gap={12} size={1} color="oklch(0.22 0 0)" />
+      <Background gap={12} size={1} color="var(--border)" />
     </ReactFlow>
   );
 }

@@ -3,6 +3,7 @@ import {
   Database,
   FileText,
   Settings,
+  Settings2
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -16,12 +17,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { FilesSidebar } from "./FilesSidebar";
 import { DatabaseSidebar } from "./DatabaseSidebar";
+import { ConnectionsSidebar } from "./ConnectionsSidebar";
 import { AppConfigPopover } from "./AppConfigPopover";
 import { cn } from "@/lib/utils";
+import type { ConnectionDefinition } from "@/api/connection";
 
-type ActiveView = "database" | "files";
+type ActiveView = "database" | "files" | "connections";
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onEditConnection: (id: string, s: ConnectionDefinition) => void;
+}
+
+export function AppSidebar({ onEditConnection }: AppSidebarProps) {
   const [activeView, setActiveView] = useState<ActiveView>("files");
   const { setOpen, open } = useSidebar();
 
@@ -38,7 +45,7 @@ export function AppSidebar() {
   return (
     <Sidebar 
       collapsible="icon" 
-      className="border-r border-border bg-[oklch(0.12_0_0)] overflow-hidden"
+      className="border-r border-border bg-sidebar overflow-hidden"
     >
       <SidebarHeader className="h-12 border-b border-border px-4 py-0 flex justify-center sr-only">
         <Link to="/" className="flex items-center gap-2 font-semibold text-sm text-foreground">
@@ -48,7 +55,7 @@ export function AppSidebar() {
 
       <div className="flex h-full flex-1 overflow-hidden">
         {/* Rail (Activity Bar) */}
-        <div className="w-[48px] border-r border-border flex flex-col items-center py-2 gap-2 bg-[oklch(0.12_0_0)] z-10">
+        <div className="w-[48px] border-r border-border flex flex-col items-center py-2 gap-2 bg-sidebar z-10">
           <Button
             variant="ghost"
             size="icon"
@@ -73,6 +80,18 @@ export function AppSidebar() {
           >
             <FileText className="h-5 w-5" />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleViewChange("connections")}
+            className={cn(
+              "h-10 w-10 text-muted-foreground hover:text-foreground",
+              activeView === "connections" && "bg-accent text-accent-foreground"
+            )}
+            title="Manage Connections"
+          >
+            <Settings2 className="h-5 w-5" />
+          </Button>
 
           <div className="flex-1" />
 
@@ -83,6 +102,7 @@ export function AppSidebar() {
         <SidebarContent className="flex-1 gap-0">
           {activeView === "files" && <FilesSidebar />}
           {activeView === "database" && <DatabaseSidebar />}
+          {activeView === "connections" && <ConnectionsSidebar onEditConnection={onEditConnection} />}
         </SidebarContent>
       </div>
 

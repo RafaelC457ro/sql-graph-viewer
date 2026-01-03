@@ -1,6 +1,6 @@
 import { Client } from "pg";
 import { db } from "../db";
-import { sessions } from "../db/schema";
+import { connections } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 type ConnectionConfig = {
@@ -43,17 +43,17 @@ export class ConnectionManager {
       return activeConn.client;
     }
 
-    // 2. If not, check if session exists in DB
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
+    // 2. If not, check if connection exists in DB
+    const connection = await db.query.connections.findFirst({
+      where: eq(connections.id, sessionId),
     });
 
-    if (!session) {
-      throw new Error("Session not found");
+    if (!connection) {
+      throw new Error("Connection not found");
     }
 
     // 3. Create new connection
-    const config = session.connectionConfig as ConnectionConfig;
+    const config = connection.connectionConfig as ConnectionConfig;
     const client = new Client({
       host: config.host,
       port: config.port ? parseInt(config.port) : 5432,
@@ -72,9 +72,9 @@ export class ConnectionManager {
       });
 
       // Update last active in DB (background)
-      db.update(sessions)
+      db.update(connections)
         .set({ lastActiveAt: new Date() })
-        .where(eq(sessions.id, sessionId))
+        .where(eq(connections.id, sessionId))
         .run();
 
       return client;

@@ -25,7 +25,7 @@ const PropertiesPanel = ({
   const properties = data.properties || data;
 
   return (
-    <div className="absolute top-4 right-4 w-72 bg-[oklch(0.12_0_0)]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="absolute top-4 right-4 w-72 bg-card/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between p-3 border-b border-white/10 bg-white/5">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
@@ -236,16 +236,16 @@ export function GraphView({
 
   if (normalized.nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground uppercase tracking-widest text-xs font-semibold bg-[oklch(0.09_0_0)]">
+      <div className="flex items-center justify-center h-full text-muted-foreground uppercase tracking-widest text-xs font-semibold bg-background">
         No graph data to visualize
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full bg-[oklch(0.09_0_0)]">
+    <div className="relative w-full h-full bg-background">
       <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
-        <div className="flex items-center overflow-hidden rounded-md border border-white/10 bg-[oklch(0.12_0_0)]/85 shadow-lg backdrop-blur">
+        <div className="flex items-center overflow-hidden rounded-md border border-white/10 bg-card/85 shadow-lg backdrop-blur">
           <Button
             variant="ghost"
             size="icon"

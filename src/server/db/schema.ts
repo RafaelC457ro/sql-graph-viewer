@@ -29,8 +29,8 @@ export const files = sqliteTable("files", {
 });
 
 
-// Sessions table for connection management
-export const sessions = sqliteTable("sessions", {
+// Connections table for server management
+export const connections = sqliteTable("connections", {
   id: text("id").primaryKey(), // Using text because we'll generate UUIDs
   name: text("name").notNull().default("Unnamed Server"),
   connectionConfig: text("connection_config", { mode: "json" }).notNull(),
@@ -41,4 +41,7 @@ export const sessions = sqliteTable("sessions", {
   lastActiveAt: integer("last_active_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`0`),
 });

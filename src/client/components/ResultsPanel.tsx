@@ -6,12 +6,14 @@ import type { QueryResult } from "../../shared/types";
 interface ResultsPanelProps {
   result: QueryResult | null;
   isLoading?: boolean;
+  isSuccess?: boolean;
   error?: string | null;
 }
 
 export function ResultsPanel({
   result,
   isLoading,
+  isSuccess = false,
   error,
 }: ResultsPanelProps) {
   const isGraph = result?.kind === "graph";
@@ -32,7 +34,7 @@ export function ResultsPanel({
       {isLoading && (
         <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[oklch(0.55_0.22_145)]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="text-xs text-muted-foreground">Running query...</span>
           </div>
         </div>
@@ -43,7 +45,7 @@ export function ResultsPanel({
           <TabsList className="bg-transparent h-8 p-0 gap-4">
             <TabsTrigger
               value="results"
-              className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-[oklch(0.55_0.22_145)] data-[state=active]:text-foreground"
+              className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-primary data-[state=active]:text-foreground"
             >
               Results
             </TabsTrigger>
@@ -51,7 +53,7 @@ export function ResultsPanel({
             {isGraph && (
               <TabsTrigger
                 value="graph"
-                className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-[oklch(0.55_0.22_145)] data-[state=active]:text-foreground"
+                className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-primary data-[state=active]:text-foreground"
               >
                 Graph
               </TabsTrigger>
@@ -59,7 +61,7 @@ export function ResultsPanel({
 
             <TabsTrigger
               value="raw"
-              className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-[oklch(0.55_0.22_145)] data-[state=active]:text-foreground"
+              className="text-xs h-8 px-2 rounded-none border-0 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:!border-b-2 data-[state=active]:!border-b-primary data-[state=active]:text-foreground"
             >
               Raw
             </TabsTrigger>
@@ -67,7 +69,11 @@ export function ResultsPanel({
         </div>
 
         <TabsContent value="results" className="flex-1 m-0 overflow-auto">
-          <ResultsTable columns={result?.columns || []} rows={result?.rows || []} />
+          <ResultsTable 
+            columns={result?.columns || []} 
+            rows={result?.rows || []} 
+            isSuccess={isSuccess}
+          />
         </TabsContent>
 
         {isGraph && (

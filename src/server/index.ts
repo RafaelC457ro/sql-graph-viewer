@@ -5,6 +5,7 @@ import { Elysia } from "elysia";
 import { filesRoutes } from "./routes/files";
 import { foldersRoutes } from "./routes/folders";
 import { connectionRoutes } from "./routes/connections";
+import { databaseRoutes } from "./routes/database";
 
 const api = new Elysia()
   .get("/api/hello", () => ({
@@ -13,7 +14,8 @@ const api = new Elysia()
   }))
   .use(filesRoutes)
   .use(foldersRoutes)
-  .use(connectionRoutes);
+  .use(connectionRoutes)
+  .use(databaseRoutes);
 
 const server = serve({
   routes: {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ResizableHandle,
@@ -10,7 +10,8 @@ import { QueryEditor } from "@/components/QueryEditor";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { useQueryTabs } from "@/hooks/useQueryTabs";
 import { useFiles, useUpdateFile, useCreateFile } from "@/hooks/useFiles";
-import { useQueryExecution } from "@/hooks/useConnection";
+import { useQueryExecution, useSession } from "@/hooks/useConnection";
+import { useTables } from "@/hooks/useDatabaseInfo";
 import type { QueryResult } from "../../shared/types";
 
 // Helper to generate unique name with (1), (2), etc.
@@ -35,6 +36,19 @@ export function QueryPage() {
   const { data: files } = useFiles();
   const updateFile = useUpdateFile();
   const createFile = useCreateFile();
+
+  const { isConnected } = useSession();
+  const { data: tablesData } = useTables(isConnected);
+
+  // Prepare schema for autocompletion
+  const editorSchema = useMemo(() => {
+    const tables = tablesData?.tables || [];
+    const schema: Record<string, string[]> = {};
+    tables.forEach(table => {
+      schema[table] = []; // We don't have columns yet, but table names are enough for now
+    });
+    return schema;
+  }, [tablesData]);
 
   const {
     tabs,
@@ -123,22 +137,38 @@ export function QueryPage() {
   };
 
   const queryExecution = useQueryExecution();
-  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
-  const [executionError, setExecutionError] = useState<string | null>(null);
+  const [tabResults, setTabResults] = useState<Record<string, { 
+    result: QueryResult | null, 
+    isSuccess: boolean, 
+    error: string | null 
+  }>>({});
+
+  const currentTabResult = activeTabId ? tabResults[activeTabId] : null;
 
   const handleRun = useCallback(async (query?: string) => {
     const queryToRun = query || activeTab?.content;
     if (!queryToRun) return;
     
-    setExecutionError(null);
+    // Clear error for this tab before running
+    setTabResults(prev => ({
+      ...prev,
+      [activeTabId]: { ...(prev[activeTabId] || { result: null }), isSuccess: false, error: null }
+    }));
+
     try {
       const result = await queryExecution.mutateAsync(queryToRun);
-      setQueryResult(result);
+      setTabResults(prev => ({
+        ...prev,
+        [activeTabId]: { result, isSuccess: true, error: null }
+      }));
     } catch (e) {
-      console.error(e);
-      setExecutionError(e instanceof Error ? e.message : "Query failed");
+      const errorMsg = e instanceof Error ? e.message : "Query failed";
+      setTabResults(prev => ({
+        ...prev,
+        [activeTabId]: { result: null, isSuccess: false, error: errorMsg }
+      }));
     }
-  }, [activeTab?.content, queryExecution]);
+  }, [activeTabId, activeTab?.content, queryExecution]);
 
   return (
     <div className="h-full flex flex-col">
@@ -157,6 +187,7 @@ export function QueryPage() {
             onChange={(value) => updateTabContent(activeTabId, value)}
             onRun={handleRun}
             onSave={handleSave}
+            schema={editorSchema}
           />
         </ResizablePanel>
 
@@ -164,9 +195,10 @@ export function QueryPage() {
 
         <ResizablePanel defaultSize={50} minSize={20}>
           <ResultsPanel
-            result={queryResult}
+            result={currentTabResult?.result ?? null}
             isLoading={queryExecution.isPending}
-            error={executionError}
+            isSuccess={currentTabResult?.isSuccess ?? false}
+            error={currentTabResult?.error ?? null}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

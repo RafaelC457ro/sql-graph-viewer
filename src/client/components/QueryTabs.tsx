@@ -20,24 +20,24 @@ export function QueryTabs({
   onTabAdd,
 }: QueryTabsProps) {
   return (
-    <div className="flex h-9 items-center border-b border-border bg-[oklch(0.14_0_0)]">
+    <div className="flex h-9 items-center border-b border-border bg-muted/30">
       <ScrollArea className="flex-1">
         <div className="flex items-center">
           {tabs.map((tab) => (
             <div
               key={tab.id}
               className={cn(
-                "group flex h-9 items-center gap-2 px-4 border-r border-border cursor-pointer transition-colors text-xs",
+                "group flex h-9 items-center gap-2 px-3 border-r border-border cursor-pointer transition-all text-xs relative",
                 activeTabId === tab.id
-                  ? "bg-[oklch(0.12_0_0)] text-foreground"
-                  : "text-muted-foreground hover:bg-[oklch(0.12_0_0)] hover:text-foreground"
+                  ? "bg-card text-foreground border-t-2 border-t-white/80"
+                  : "text-muted-foreground hover:bg-card hover:text-foreground border-t-2 border-t-transparent"
               )}
               onClick={() => onTabChange(tab.id)}
             >
-              <span className="text-sm truncate max-w-[120px]">{tab.title}</span>
+              <span className="text-sm truncate max-w-[120px] transition-all">{tab.title}</span>
               {tabs.length > 1 && (
                 <button
-                  className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 hover:bg-white/10 p-0.5 rounded transition-all mr-[-4px]"
                   onClick={(e) => {
                     e.stopPropagation();
                     onTabClose(tab.id);
