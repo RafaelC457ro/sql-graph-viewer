@@ -251,7 +251,6 @@ export function GraphView({
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={handleZoomIn}
-            disabled={!controlsAvailable}
             title="Zoom in"
           >
             <ZoomIn className="h-4 w-4" />
@@ -261,7 +260,6 @@ export function GraphView({
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={handleZoomOut}
-            disabled={!controlsAvailable}
             title="Zoom out"
           >
             <ZoomOut className="h-4 w-4" />
@@ -271,7 +269,6 @@ export function GraphView({
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={handleResetView}
-            disabled={!controlsAvailable}
             title="Reset view"
           >
             <Maximize2 className="h-4 w-4" />

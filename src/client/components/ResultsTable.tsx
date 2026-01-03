@@ -17,7 +17,7 @@ interface ResultsTableProps {
 export function ResultsTable({ columns, rows, isSuccess }: ResultsTableProps) {
   if (!isSuccess) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
+      <div className="flex items-center justify-center h-full text-muted-foreground italic text-sm">
         Click Run to execute your query.
       </div>
     );

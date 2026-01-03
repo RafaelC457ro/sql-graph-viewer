@@ -1,21 +1,50 @@
-# bun-react-tailwind-shadcn-template
+# SQL Graph Viewer
 
-To install dependencies:
+A modern, fast database viewer for Apache AGE (PostgreSQL-based graph database). Built with Bun, Elysia, and React.
 
-```bash
-bun install
-```
+## Features
 
-To start a development server:
+- **Standardized Connections**: Manage and save multiple database connection profiles.
+- **Session Management**: Transparent handling of active database sessions.
+- **Graph Visualization**: Interactive graph rendering for AGE query results.
+- **Query Editor**: Powerful SQL/Cypher editor with syntax highlighting.
+- **Modern UI**: Sleek, responsive design built with Tailwind CSS and shadcn/ui.
 
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh) installed on your system.
+- A PostgreSQL instance with the [Apache AGE](https://age.apache.org/) extension installed.
+
+### Setup
+
+1. **Install Dependencies**:
+   ```bash
+   bun install
+   ```
+
+2. **Initialize Database**:
+   This command creates the local storage for your connections and runs the necessary schema setup.
+   ```bash
+   bun run init
+   ```
+
+### Running the App
+
+Start the development server:
 ```bash
 bun dev
 ```
 
-To run for production:
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-```bash
-bun start
-```
+## Tech Stack
 
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+- **Runtime**: Bun
+- **Server**: ElysiaJS
+- **Frontend**: React, React Router
+- **Styling**: Tailwind CSS
+- **Components**: shadcn/ui
+- **ORM**: Drizzle (SQLite for local configuration)
+- **Graph**: React Flow / Cytoscape.js
