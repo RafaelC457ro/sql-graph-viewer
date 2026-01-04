@@ -1,6 +1,14 @@
 # SQL Graph Viewer
 
-A modern, fast database viewer for Apache AGE (PostgreSQL-based graph database). Built with Bun, Elysia, and React.
+A modern, fast database viewer for Apache AGE (PostgreSQL-based graph database). 
+
+## Disclaimer
+
+> I created this project because I couldn’t even get https://github.com/apache/age-viewer/ to run. I basically vibecoded the whole thing, but I do know how to code. I know this might be kinda rough, but the official one is even worse and I just needed a graph database visualizer that actually works.
+> So I built one from scratch. I decided to use Bun because I wanted to try it out. Elysia might be overkill, but who cares.
+> Feel free to contribute and help make it better. I made this because I needed something fast that worked.
+
+## Screenshots
 
 ![Query Editor and Results](docs/img1.png)
 ![Graph Visualization](docs/img2.png)
@@ -51,3 +59,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **Components**: shadcn/ui
 - **ORM**: Drizzle (SQLite for local configuration)
 - **Graph**: React Flow / Cytoscape.js
+
+## License
+
+DWYW - Do whatever you want with it. This is my license.
+
