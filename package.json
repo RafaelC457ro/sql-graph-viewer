@@ -8,6 +8,7 @@
     "start": "NODE_ENV=production bun src/server/index.ts",
     "build": "bun run build.ts",
     "db:push": "drizzle-kit push",
+    "db:seed": "bun src/server/db/seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

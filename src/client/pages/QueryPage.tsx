@@ -60,6 +60,7 @@ export function QueryPage() {
     updateTabContent,
     updateTabFileId,
     updateTabTitle,
+    updateTabSyncedAt,
   } = useQueryTabs();
 
   // Sync tab titles with file names when files are renamed
@@ -90,11 +91,30 @@ export function QueryPage() {
         const existingTab = tabs.find(t => t.fileId === fileId);
         
         if (existingTab) {
+           // Sync logic: if DB file is newer than what we last synced, update content
+           // If lastSyncedAt is missing, we assume it's stale (e.g. from before this feature or legacy cache)
+           const fileUpdatedAt = new Date(file.updatedAt).getTime();
+           const lastSyncedAt = existingTab.lastSyncedAt ? new Date(existingTab.lastSyncedAt).getTime() : 0;
+           
+           if (fileUpdatedAt > lastSyncedAt && existingTab.content !== file.content) {
+             console.log("Syncing tab with newer DB content", { fileId, fileUpdatedAt, lastSyncedAt });
+             updateTabContent(existingTab.id, file.content);
+             updateTabSyncedAt(existingTab.id, new Date(file.updatedAt).toISOString());
+           } else if (!existingTab.lastSyncedAt) {
+             // If we match content but had no timestamp, just set the timestamp
+             updateTabSyncedAt(existingTab.id, new Date(file.updatedAt).toISOString());
+           }
+
            if (existingTab.id !== activeTabId) {
              setActiveTabId(existingTab.id);
            }
         } else {
-           addTab({ title: file.name, content: file.content, fileId: file.id });
+           addTab({ 
+             title: file.name, 
+             content: file.content, 
+             fileId: file.id,
+             lastSyncedAt: new Date(file.updatedAt).toISOString() 
+           });
         }
       }
     }
@@ -106,11 +126,13 @@ export function QueryPage() {
     if (activeTab.fileId) {
       // Update existing file
       try {
-        await updateFile.mutateAsync({
+        const updatedFile = await updateFile.mutateAsync({
           id: activeTab.fileId,
           name: activeTab.title,
           content: activeTab.content
         });
+        // Update synced timestamp
+        updateTabSyncedAt(activeTabId, new Date(updatedFile.updatedAt).toISOString());
       } catch (e) {
         console.error(e);
         alert("Failed to save");
@@ -128,6 +150,7 @@ export function QueryPage() {
         
         // Associate tab with new file
         updateTabFileId(activeTabId, newFile.id);
+        updateTabSyncedAt(activeTabId, new Date(newFile.updatedAt).toISOString());
         navigate(`/?fileId=${newFile.id}`);
       } catch (e) {
         console.error(e);

@@ -187,6 +187,9 @@ export function FilesSidebar() {
       ? files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
       : files;
     
+    // Sort files by name
+    filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    
     const favs = filtered.filter(f => f.isFavorite);
     const uncat = filtered.filter(f => !f.folderId);
     

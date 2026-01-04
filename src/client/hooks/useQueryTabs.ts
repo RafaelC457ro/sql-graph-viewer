@@ -5,6 +5,7 @@ export interface QueryTab {
   title: string;
   content: string;
   fileId?: number;
+  lastSyncedAt?: string;
 }
 
 interface PersistedTabState {
@@ -103,7 +104,7 @@ export function useQueryTabs() {
   }, []);
 
   const addTab = useCallback(
-    (initialData?: { title?: string; content?: string; fileId?: number }) => {
+    (initialData?: { title?: string; content?: string; fileId?: number; lastSyncedAt?: string }) => {
       const newId = createTabId();
       setTabs((currentTabs) => {
         const newTab: QueryTab = {
@@ -111,6 +112,7 @@ export function useQueryTabs() {
           title: initialData?.title ?? `Query ${currentTabs.length + 1}`,
           content: initialData?.content ?? "-- Write your SQL query here\n",
           fileId: initialData?.fileId,
+          lastSyncedAt: initialData?.lastSyncedAt,
         };
         return [...currentTabs, newTab];
       });
@@ -160,6 +162,12 @@ export function useQueryTabs() {
     );
   }, []);
 
+  const updateTabSyncedAt = useCallback((id: string, lastSyncedAt: string) => {
+    setTabs((currentTabs) =>
+      currentTabs.map((tab) => (tab.id === id ? { ...tab, lastSyncedAt } : tab))
+    );
+  }, []);
+
   useEffect(() => {
     if (!tabs.some((tab) => tab.id === activeTabId) && tabs.length > 0) {
       const lastTab = tabs[tabs.length - 1];
@@ -195,5 +203,6 @@ export function useQueryTabs() {
     updateTabContent,
     updateTabTitle,
     updateTabFileId,
+    updateTabSyncedAt,
   };
 }

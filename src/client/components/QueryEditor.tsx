@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import CodeMirror from "@uiw/react-codemirror";
 import { sql } from "@codemirror/lang-sql";
-import { EditorView } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
+import { selectAll } from "@codemirror/commands";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
@@ -81,10 +82,13 @@ export function QueryEditor({
   const editorRef = useRef<ReactCodeMirrorRef>(null);
 
   const sqlExtension = useMemo(() => {
-    return sql({
-      schema: schema || {},
-      upperCaseKeywords: true,
-    });
+    return [
+      sql({
+        schema: schema || {},
+        upperCaseKeywords: true,
+      }),
+      keymap.of([{ key: "Mod-a", run: selectAll }]),
+    ];
   }, [schema]);
 
   const handleRun = useCallback(() => {
