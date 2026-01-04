@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchFiles, createFile, updateFile, patchFile, deleteFile } from "../api/files";
-import type { File, NewFile } from "../../shared/types";
+import type { File, NewFile } from "../../types/types";
 
 export const useFiles = () => {
   return useQuery({

@@ -1,4 +1,4 @@
-import type { Folder, NewFolder } from "../../shared/types";
+import type { Folder, NewFolder } from "../../types/types";
 
 const API_URL = "/api/db/folders";
 

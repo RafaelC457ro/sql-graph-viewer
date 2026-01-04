@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResultsTable } from "./ResultsTable";
 import { GraphView } from "./GraphView";
-import type { QueryResult } from "../../shared/types";
+import type { QueryResult } from "../../types/types";
 
 interface ResultsPanelProps {
   result: QueryResult | null;
@@ -40,7 +40,7 @@ export function ResultsPanel({
         </div>
       )}
 
-      <Tabs defaultValue="results" className="flex-1 flex flex-col">
+      <Tabs defaultValue="results" className="flex-1 flex flex-col min-h-0">
         <div className="border-b border-border px-4 py-0">
           <TabsList className="bg-transparent h-8 p-0 gap-4">
             <TabsTrigger
@@ -68,7 +68,7 @@ export function ResultsPanel({
           </TabsList>
         </div>
 
-        <TabsContent value="results" className="flex-1 m-0 overflow-auto">
+        <TabsContent value="results" className="flex-1 m-0 overflow-hidden min-h-0 flex flex-col">
           <ResultsTable 
             columns={result?.columns || []} 
             rows={result?.rows || []} 
@@ -77,12 +77,12 @@ export function ResultsPanel({
         </TabsContent>
 
         {isGraph && (
-          <TabsContent value="graph" className="flex-1 m-0">
+          <TabsContent value="graph" className="m-0 min-h-0 flex-1">
             <GraphView nodes={result.nodes} edges={result.edges} />
           </TabsContent>
         )}
 
-        <TabsContent value="raw" className="flex-1 m-0 overflow-auto bg-muted/30">
+        <TabsContent value="raw" className="m-0 min-h-0 flex-1 overflow-auto">
           <pre className="p-4 text-[11px] font-mono leading-relaxed whitespace-pre p-4">
             {result ? JSON.stringify(result, null, 2) : "No result available"}
           </pre>

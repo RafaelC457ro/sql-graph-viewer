@@ -1,4 +1,4 @@
-import type { File, NewFile } from "../../shared/types";
+import type { File, NewFile } from "../../types/types";
 
 const API_URL = "/api/db/files";
 

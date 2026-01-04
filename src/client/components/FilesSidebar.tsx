@@ -53,7 +53,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import type { File, Folder as FolderType } from "../../shared/types";
+import type { File, Folder as FolderType } from "../../types/types";
 
 type DialogMode = 
   | { type: "none" }

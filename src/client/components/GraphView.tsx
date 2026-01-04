@@ -11,7 +11,7 @@ import {
 import { getColorForLabel } from "./graph/graph-colors";
 import { Button } from "./ui/button";
 import { useGraphRenderer } from "@/hooks/useGraphRenderer";
-import type { GraphResult } from "../../shared/types";
+import type { GraphResult } from "../../types/types";
 
 const PropertiesPanel = ({
   data,

@@ -1,4 +1,4 @@
-import type { QueryResult, TableResult, GraphResult } from "../../shared/types";
+import type { QueryResult, TableResult, GraphResult } from "../../types/types";
 
 type AgeTagged =
   | { __agKind: "vertex"; id: any; label: string; properties?: any }

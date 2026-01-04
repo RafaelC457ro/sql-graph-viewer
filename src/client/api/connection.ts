@@ -1,4 +1,4 @@
-import type { QueryResult } from "../../shared/types";
+import type { QueryResult } from "../../types/types";
 
 export interface ConnectionParams {
   host?: string;

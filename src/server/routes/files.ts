@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { db } from "../db";
 import { files } from "../db/schema";
 import { eq, like } from "drizzle-orm";
-import { fileInsertSchema } from "../../shared/types";
+import { fileInsertSchema } from "../../types/types";
 
 export const filesRoutes = new Elysia({ prefix: "/api/db/files" })
   // GET all files with optional search

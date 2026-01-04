@@ -12,7 +12,7 @@ import { useQueryTabs } from "@/hooks/useQueryTabs";
 import { useFiles, useUpdateFile, useCreateFile } from "@/hooks/useFiles";
 import { useQueryExecution, useSession } from "@/hooks/useConnection";
 import { useTables } from "@/hooks/useDatabaseInfo";
-import type { QueryResult } from "../../shared/types";
+import type { QueryResult } from "../../types/types";
 
 // Helper to generate unique name with (1), (2), etc.
 function getUniqueName(baseName: string, existingNames: string[]): string {
