@@ -12,6 +12,7 @@ import { useQueryTabs } from "@/hooks/useQueryTabs";
 import { useFiles, useUpdateFile, useCreateFile } from "@/hooks/useFiles";
 import { useQueryExecution, useSession } from "@/hooks/useConnection";
 import { useTables } from "@/hooks/useDatabaseInfo";
+import type { QueryTab } from "@/hooks/useQueryTabs";
 import type { QueryResult } from "../../types/types";
 
 // Helper to generate unique name with (1), (2), etc.
@@ -81,6 +82,17 @@ export function QueryPage() {
       }
     });
   }, [files]);
+
+  // Handle tab change with URL update
+  const handleTabChange = useCallback((id: string) => {
+    setActiveTabId(id);
+    const tab = tabs.find(t => t.id === id);
+    if (tab?.fileId) {
+      setSearchParams({ fileId: tab.fileId.toString() });
+    } else {
+      setSearchParams({});
+    }
+  }, [tabs, setActiveTabId, setSearchParams]);
 
   // Load file from URL param into a tab
   useEffect(() => {
@@ -198,7 +210,7 @@ export function QueryPage() {
       <QueryTabs
         tabs={tabs}
         activeTabId={activeTabId}
-        onTabChange={setActiveTabId}
+        onTabChange={handleTabChange}
         onTabClose={removeTab}
         onTabAdd={addTab}
       />

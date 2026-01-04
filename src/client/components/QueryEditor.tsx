@@ -12,7 +12,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import { selectAll } from "@codemirror/commands";
 import { dracula } from "@uiw/codemirror-theme-dracula";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import type { ReactCodeMirrorRef } from "@uiw/react-codemirror";
 
 interface QueryEditorProps {
@@ -81,16 +81,6 @@ export function QueryEditor({
 }: QueryEditorProps) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
 
-  const sqlExtension = useMemo(() => {
-    return [
-      sql({
-        schema: schema || {},
-        upperCaseKeywords: true,
-      }),
-      keymap.of([{ key: "Mod-a", run: selectAll }]),
-    ];
-  }, [schema]);
-
   const handleRun = useCallback(() => {
     const view = editorRef.current?.view;
     if (!view) {
@@ -108,21 +98,36 @@ export function QueryEditor({
     }
   }, [onRun]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault();
-        onSave?.();
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleRun();
-      }
-    };
+  const sqlExtension = useMemo(() => {
+    return [
+      sql({
+        schema: schema || {},
+        upperCaseKeywords: true,
+      }),
+      keymap.of([
+        { key: "Mod-a", run: selectAll },
+        { 
+          key: "Mod-s", 
+          run: () => {
+             if (onSave) {
+               onSave();
+               return true;
+             }
+             return false;
+          }
+        },
+        { 
+          key: "Mod-Enter", 
+          run: () => {
+            handleRun();
+            return true;
+          }
+        }
+      ]),
+    ];
+  }, [schema, onSave, handleRun]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSave, handleRun]);
+
 
   return (
     <div className="flex flex-col h-full bg-background">
